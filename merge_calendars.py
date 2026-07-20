@@ -104,9 +104,13 @@ import time
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
-VERSAO = "3.10"
+VERSAO = "3.12"
 
 HISTORICO = [
+    "3.12 - site_url na configuracao: os links passam a estar certos mesmo com "
+    "a pagina aberta a partir do disco",
+    "3.11 - titulos da agenda encurtados: a nota completa passou para a "
+    "descricao do evento, em vez de ocupar a linha toda no calendario",
     "3.10 - as duas paginas passaram a ter ligacao uma para a outra, para se "
     "perceber que sao o mesmo sitio",
     "3.9 - o verificador avisa quando um bloqueio manual ja terminou e pode "
@@ -156,6 +160,9 @@ DEFAULT_SETTINGS = {
     "use_cache_on_failure": True,
     "event_summary": "Nao disponivel",
     "dashboard_days": 210,
+    # Endereco publico do site, para os links funcionarem mesmo com a pagina
+    # aberta a partir do disco. Vazio = calculado a partir do endereco atual.
+    "site_url": "",
 }
 
 ORIGIN_TAG = "casa-trindade"
@@ -317,8 +324,20 @@ def titulo_detalhado(room_name: str, sources: list) -> str:
 
     Funcao pura: verificada nos autotestes.
     """
-    origens = [s.split("manual:", 1)[-1] if s.startswith("manual:") else s for s in sources]
+    origens = [rotulo_curto(s.split("manual:", 1)[-1]) if s.startswith("manual:") else s
+               for s in sources]
     return f"{room_name} · " + " + ".join(origens)
+
+
+def rotulo_curto(texto: str, limite: int = 22) -> str:
+    """Primeira parte de uma nota, para caber no titulo de um evento.
+
+    "Nahla - reservou no anuncio do Q2, alojada aqui" -> "Nahla".
+    A nota completa vai na descricao do evento, que nao ocupa espaco no ecra.
+    """
+    corte = re.split(r"\s[-–]\s|,|\(", texto.strip(), maxsplit=1)[0].strip()
+    corte = corte or texto.strip()
+    return corte if len(corte) <= limite else corte[: limite - 1].rstrip() + "…"
 
 
 def build_ics(calname: str, blocks, settings: dict, detalhe: bool = False) -> str:
@@ -342,8 +361,10 @@ def build_ics(calname: str, blocks, settings: dict, detalhe: bool = False) -> st
         ).hexdigest()[:16]
         if detalhe:
             resumo = titulo_detalhado(rotulo, sources)
-            descricao = (f"{(end - start).days} noites. Origem: "
-                         + ", ".join(sources) + ". Sem nomes por ser publico.")
+            origens_completas = [s.split("manual:", 1)[-1] if s.startswith("manual:") else s
+                                 for s in sources]
+            descricao = (f"{(end - start).days} noites. "
+                         + " / ".join(origens_completas))
         else:
             resumo = settings["event_summary"]
             descricao = None
@@ -606,6 +627,7 @@ def write_dashboard(properties_data: list, settings: dict, ok: bool) -> None:
 
     payload = {
         "engine_version": VERSAO,
+        "site_url": (settings.get("site_url") or "").rstrip("/"),
         "config": config_bruta,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "result": "OK" if ok else "COM ERROS",
@@ -780,6 +802,12 @@ def _t18_feed_exclui_a_propria_plataforma():
 
 
 def _t19_titulo_sem_nomes():
+    if rotulo_curto("Nahla - reservou no anuncio do Q2, alojada aqui") != "Nahla":
+        return "a nota longa deixou de ser encurtada para o titulo"
+    if rotulo_curto("Obras") != "Obras":
+        return "uma nota curta foi alterada sem necessidade"
+    if len(rotulo_curto("x" * 40)) > 22:
+        return "um rotulo sem separadores nao foi cortado"
     titulo = titulo_detalhado("Quarto 2", ["Spotahome", "manual:Hyunjoo - reserva HA"])
     if not titulo.startswith("Quarto 2 · "):
         return f"titulo inesperado: {titulo}"

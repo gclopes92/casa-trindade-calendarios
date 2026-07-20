@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   PAINEL DE DISPONIBILIDADE — Calendar Sync
-  Versao 3.10
+  Versao 3.12
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -294,7 +294,7 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 <script src="output/dashboard.js" onerror="window.SYNC_ERRO=true"></script>
 <script>
 (function(){
-  const PAINEL_VERSAO = "3.10";
+  const PAINEL_VERSAO = "3.12";
 
   // PLATAFORMAS — cor e endereco de cada plataforma. As cores foram tiradas dos
   // proprios logos, exceto onde esta dito. Corrige aqui e em mais lado nenhum.
@@ -461,7 +461,11 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
     return "há " + dd + (dd === 1 ? " dia" : " dias");
   }
 
-  function urlIcs(rel){
+  function urlIcs(rel){                                    // AJUDA: versões e atualizações
+    // o endereco fixado na configuracao ganha sempre: e o unico que funciona
+    // com a pagina aberta a partir do disco
+    const base = (window.SYNC_DATA && window.SYNC_DATA.site_url) || "";
+    if (base) return base + "/output/" + rel;
     if (location.protocol === "file:") return "output/" + rel;
     return new URL("output/" + rel, location.href).href;
   }
@@ -590,6 +594,14 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
       const precisa = ["fotos dos quartos", "adicionar uma plataforma"];
       const falta = precisa.filter(t => !titulos.includes(t));
       if (falta.length) return "a ajuda perdeu: " + falta.join(", ");
+    }],
+    ["o endereço fixado na configuração ganha (v3.12)", () => {
+      const guardado = window.SYNC_DATA;
+      window.SYNC_DATA = {site_url: "https://exemplo.github.io/repo"};
+      const obtido = urlIcs("casa/quarto-1.ics");
+      window.SYNC_DATA = guardado;
+      if (obtido !== "https://exemplo.github.io/repo/output/casa/quarto-1.ics")
+        return "deu " + obtido;
     }],
     ["quarto sem lista de links usa o calendário geral (v3.7)", () => {
       const quarto = {ics:"casa/quarto-1.ics", feeds:[]};

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   REGISTO DE INQUILINOS — Calendar Sync
-  Versao 1.2
+  Versao 2.0
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -15,9 +15,12 @@
      publico e o ficheiro tem numeros de documento, telefones e moradas.
      Uma unica chamada de rede nesta pagina e uma fuga de dados pessoais.
 
-  2. NADA DE localStorage NEM sessionStorage. Guardar dados pessoais no
-     browser deixa copias em maquinas partilhadas, fora do controlo da pessoa
-     e invisiveis para ela. O ficheiro escolhido e a unica verdade.
+  2. NENHUM DADO PESSOAL EM ARMAZENAMENTO DO BROWSER, e nada de localStorage
+     nem sessionStorage. Copias de nomes ou documentos numa maquina partilhada
+     ficam fora do controlo da pessoa e invisiveis para ela.
+     UNICA excecao: a REFERENCIA ao ficheiro (FileSystemFileHandle) guardada no
+     IndexedDB. E um ponteiro sem conteudo, e sem ele perdia-se o ficheiro a
+     cada mudanca de pagina. O CONTEUDO NUNCA E GUARDADO.
 
   3. NUNCA PERDER DADOS. Ao gravar: ler, fundir, escrever. Se o browser nao
      suportar gravacao direta, o aviso de "por gravar" fica visivel e NAO se
@@ -78,6 +81,17 @@ h1{font-size:clamp(20px,3vw,27px);letter-spacing:-.02em;margin:0;font-weight:700
 .acao:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 .acao.primaria{background:var(--ink);color:#fff;border-color:var(--ink)}
 .acao.perigo{color:var(--tijolo);border-color:var(--tijolo)}
+.mais{position:relative}
+.mais > summary{list-style:none;cursor:pointer}
+.mais > summary::-webkit-details-marker{display:none}
+.mais[open] > summary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.menu-lista{position:absolute;right:0;top:calc(100% + 6px);z-index:40;background:var(--surface);
+  border:1px solid var(--linha);border-radius:10px;padding:5px;min-width:240px;
+  box-shadow:0 12px 30px rgba(15,32,54,.16);display:flex;flex-direction:column}
+.menu-lista button{text-align:left;border:0;background:transparent;padding:8px 11px;
+  border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink);font-family:inherit}
+.menu-lista button:hover{background:var(--paper)}
+.reabrir{margin-top:14px}
 .estado-ficheiro{font-size:11.5px;color:var(--texto-suave);
   font-family:ui-monospace,Menlo,Consolas,monospace}
 .estado-ficheiro.porgravar{color:var(--tijolo);font-weight:600}
@@ -162,12 +176,16 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
     <span class="estado-ficheiro" id="estado-ficheiro">nenhum ficheiro aberto</span>
     <span class="spacer"></span>
     <a class="acao" href="index.html" style="text-decoration:none;display:inline-block;line-height:1.35">Disponibilidade</a>
-    <button class="acao" id="btn-abrir">Abrir ficheiro</button>
-    <button class="acao" id="btn-guardar">Guardar</button>
-    <button class="acao" id="btn-exportar">Exportar CSV</button>
-    <button class="acao" id="btn-agenda">Exportar calendário</button>
-  <button class="acao" id="btn-bloqueios">Bloqueios para o calendário</button>
-    <button class="acao" id="btn-ajuda">Ajuda</button>
+    <button class="acao primaria" id="btn-abrir">Abrir ficheiro</button>
+    <details class="mais"><summary class="acao">Mais</summary>
+      <div class="menu-lista">
+        <button id="btn-guardar">Guardar agora</button>
+        <button id="btn-bloqueios">Bloqueios para o calendário</button>
+        <button id="btn-agenda">Exportar calendário (.ics)</button>
+        <button id="btn-exportar">Exportar folha (.csv)</button>
+        <button id="btn-ajuda">Ajuda</button>
+      </div>
+    </details>
   </div>
 </header>
 
@@ -219,8 +237,9 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
 
 <script>
 (function(){
-  const PAGINA_VERSAO = "1.2";
-  const HISTORICO = ["1.2 - ligação direta à página de disponibilidade",
+  const PAGINA_VERSAO = "2.0";
+  const HISTORICO = ["2.0 - botões arrumados num menu; o ficheiro reabre num clique em vez de se perder ao mudar de página",
+    "1.2 - ligação direta à página de disponibilidade",
     "1.1 - exportar calendário com nomes, para importar no Google",
     "1.0 - primeira versão: substitui a folha de Excel"];
 
@@ -258,6 +277,9 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
       computador.</p>`],
     ["abrir e guardar", `<p>Botão <b>Abrir ficheiro</b> e escolhes o
       <code>inquilinos.json</code>. A partir daí, cada alteração é gravada sozinha.</p>
+      <p>Da próxima vez aparece <b>Reabrir</b> com o nome do ficheiro: um clique e
+      está lá. O browser exige esse clique — nenhuma página lê ficheiros teus sem
+      tu mandares. Fica guardada só a referência ao ficheiro, nunca o conteúdo.</p>
       <p>Se o teu browser não permitir gravar diretamente (acontece no Firefox, no
       Safari e no telemóvel), aparece um aviso vermelho <b>por gravar</b> que só
       desaparece quando carregares em <b>Guardar</b> e descarregares o ficheiro por
@@ -417,6 +439,44 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
     el.className = "estado-ficheiro" + (alerta ? " porgravar" : "");
   }
 
+
+  // A REFERENCIA do ficheiro fica guardada, o CONTEUDO nunca.   // AJUDA: abrir e guardar
+  // Sem isto, mudar de pagina e voltar perdia o ficheiro. O browser exige na
+  // mesma um clique para reautorizar a leitura: e uma protecao, nao um defeito.
+  function baseDados(){
+    return new Promise((res, rej) => {
+      const pedido = indexedDB.open("registo-inquilinos", 1);
+      pedido.onupgradeneeded = () => pedido.result.createObjectStore("ref");
+      pedido.onsuccess = () => res(pedido.result);
+      pedido.onerror = () => rej(pedido.error);
+    });
+  }
+  async function guardarReferencia(referencia){
+    try {
+      const db = await baseDados();
+      db.transaction("ref", "readwrite").objectStore("ref").put(referencia, "ficheiro");
+    } catch (e) { /* sem referencia guardada, abre-se a mao */ }
+  }
+  async function lerReferencia(){
+    try {
+      const db = await baseDados();
+      return await new Promise(res => {
+        const q = db.transaction("ref").objectStore("ref").get("ficheiro");
+        q.onsuccess = () => res(q.result || null);
+        q.onerror = () => res(null);
+      });
+    } catch (e) { return null; }
+  }
+  async function reabrir(referencia){
+    try {
+      const permissao = await referencia.requestPermission({mode: "readwrite"});
+      if (permissao !== "granted") return;
+      handle = referencia;
+      const ficheiro = await referencia.getFile();
+      carregar(await ficheiro.text(), referencia.name);
+    } catch (e) { alert("Não deu para reabrir: " + e.message); }
+  }
+
   async function abrirFicheiro(){                              // AJUDA: abrir e guardar
     if (podeGravarDireto){
       try {
@@ -424,6 +484,7 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
           types: [{description: "Registo de inquilinos", accept: {"application/json": [".json"]}}]
         });
         handle = h;
+        guardarReferencia(h);
         const ficheiro = await h.getFile();
         carregar(await ficheiro.text(), h.name);
       } catch (e) { if (e.name !== "AbortError") alert("Não deu para abrir: " + e.message); }
@@ -508,9 +569,25 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
     const alvo = $("tabela");
 
     if (!dados.inquilinos.length){
-      alvo.innerHTML = '<div class="vazio-tabela"><b>Ainda não há ficheiro aberto</b>' +
-        'Carrega em <b>Abrir ficheiro</b> e escolhe o teu <code>inquilinos.json</code>, ' +
-        'ou em <b>Novo inquilino</b> para começar do zero.</div>';
+      alvo.innerHTML = '<div class="vazio-tabela"><b>Nenhum ficheiro aberto</b>' +
+        'Os dados vivem num ficheiro teu, no teu computador. Abre-o para os veres.' +
+        '<div class="reabrir" id="zona-reabrir"></div></div>';
+      const escolher = document.createElement("button");
+      escolher.className = "acao primaria";
+      escolher.textContent = "Abrir ficheiro";
+      escolher.addEventListener("click", abrirFicheiro);
+      $("zona-reabrir").appendChild(escolher);
+      lerReferencia().then(referencia => {
+        const zona = $("zona-reabrir");
+        if (!referencia || !zona) return;
+        escolher.className = "acao";
+        const rapido = document.createElement("button");
+        rapido.className = "acao primaria";
+        rapido.style.marginRight = "8px";
+        rapido.textContent = "Reabrir " + referencia.name;
+        rapido.addEventListener("click", () => reabrir(referencia));
+        zona.prepend(rapido);
+      });
     } else if (!lista.length){
       alvo.innerHTML = '<div class="vazio-tabela"><b>Nada corresponde à procura</b>' +
         'Limpa a caixa de procura ou muda o filtro.</div>';
