@@ -49,12 +49,12 @@ window.SYNC_DATA = {
         "url": "https://api.spotahome.com/public/calendar/1510606.ics?k=5f0de050590d7bb153e1215f8f1591cb4270de2e25b970bd2248a8d7a5afddcd"
        },
        {
-        "platform": "Flatio",
-        "url": "https://app.flatio.com/en/front/calendar/export?hash=ma40jkvo5t30arr84w5s.ics"
-       },
-       {
         "platform": "HousingAnywhere",
         "url": "https://housinganywhere.com/api/v2/listing/2418120/calendar/3c88b00f595f032519419daa6205ae50/en"
+       },
+       {
+        "platform": "Flatio",
+        "url": "https://app.flatio.com/en/front/calendar/export?hash=ma40jkvo5t30arr84w5s.ics"
        }
       ],
       "manual_blocks": [
@@ -69,7 +69,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-20T21:34:52+00:00",
+ "generated_at": "2026-07-20T21:38:22+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -197,14 +197,14 @@ window.SYNC_DATA = {
        "events": 1
       },
       {
-       "platform": "Flatio",
-       "state": "OK",
-       "events": 1
-      },
-      {
        "platform": "HousingAnywhere",
        "state": "OK",
        "events": 3
+      },
+      {
+       "platform": "Flatio",
+       "state": "OK",
+       "events": 1
       }
      ],
      "blocks": [

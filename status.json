@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-20T21:34:49+00:00",
+  "generated_at": "2026-07-20T21:38:19+00:00",
   "sources": [
     {
       "casa": "Casa Trindade",
@@ -32,16 +32,16 @@
     {
       "casa": "Casa Trindade",
       "quarto": "Quarto 2",
-      "platform": "Flatio",
+      "platform": "HousingAnywhere",
       "state": "OK",
-      "events": 1
+      "events": 3
     },
     {
       "casa": "Casa Trindade",
       "quarto": "Quarto 2",
-      "platform": "HousingAnywhere",
+      "platform": "Flatio",
       "state": "OK",
-      "events": 3
+      "events": 1
     }
   ],
   "result": "OK"
