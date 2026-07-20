@@ -5,8 +5,7 @@
     "months_ahead": 24,
     "use_cache_on_failure": true,
     "event_summary": "Nao disponivel",
-    "dashboard_days": 210,
-    "site_url": "https://gclopes92.github.io/casa-trindade-calendarios"
+    "dashboard_days": 210
   },
   "properties": [
     {
@@ -52,7 +51,7 @@
             },
             {
               "platform": "HousingAnywhere",
-              "url": ""
+              "url": "https://housinganywhere.com/api/v2/listing/2418120/calendar/3c88b00f595f032519419daa6205ae50/en"
             }
           ],
           "manual_blocks": [
