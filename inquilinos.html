@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   REGISTO DE INQUILINOS — Calendar Sync
-  Versao 2.1
+  Versao 2.2
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -42,7 +42,12 @@
      houver razao concreta. Numero de documento e o mais sensivel do
      ficheiro: existe porque os contratos e as obrigacoes fiscais o exigem.
 
-  8. REGISTO DE AVARIAS: (ainda nenhuma)
+  8. REGISTO DE AVARIAS:
+     v2.1  O UID de cada evento exportado incluia a posicao da ficha na lista.
+           Apagar uma ficha deslocava as seguintes, e reimportar no calendario
+           criava eventos duplicados em vez de atualizar os existentes.
+           -> UID passou a ser so o id da ficha, que nunca muda. Teste no
+              autoteste do calendario exportado.
 
   9. PENDENTE:
      - Anexar contratos e recibos — adiado; ficheiros grandes dentro do JSON
@@ -237,8 +242,9 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
 
 <script>
 (function(){
-  const PAGINA_VERSAO = "2.1";
-  const HISTORICO = ["2.1 - o calendário exportado passou a ter quarto, nome e plataforma no título",
+  const PAGINA_VERSAO = "2.2";
+  const HISTORICO = ["2.2 - reimportar o calendário deixou de criar eventos duplicados",
+    "2.1 - o calendário exportado passou a ter quarto, nome e plataforma no título",
     "2.0 - botões arrumados num menu; o ficheiro reabre num clique em vez de se perder ao mudar de página",
     "1.2 - ligação direta à página de disponibilidade",
     "1.1 - exportar calendário com nomes, para importar no Google",
@@ -401,10 +407,12 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
     const semData = i => !i.inicio || !i.fim;
     const linhas = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Registo de inquilinos//PT",
       "CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Inquilinos"];
-    lista.filter(i => !semData(i)).forEach((inq, n) => {
+    lista.filter(i => !semData(i)).forEach((inq, n) => {   // AJUDA: calendário com nomes
       const limpa = t => String(t||"").replace(/[\\;,]/g, m => "\\" + m).replace(/\n/g, "\\n");
       linhas.push("BEGIN:VEVENT",
-        "UID:inq-" + n + "-" + (inq.id||n) + "@registo.local",
+        // o UID nao pode depender da ordem na lista: se dependesse, reimportar
+        // depois de apagar uma ficha criava eventos duplicados no calendario
+        "UID:" + (inq.id || ("sem-id-" + n)) + "@registo.local",
         "DTSTAMP:" + carimbo,
         "DTSTART;VALUE=DATE:" + inq.inicio.replace(/-/g,""),
         "DTEND;VALUE=DATE:" + inq.fim.replace(/-/g,""),
@@ -775,6 +783,12 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
       if (!ics.includes("DTSTART;VALUE=DATE:20260901")) return "data mal escrita";
       const semDatas = paraICS([{id:"b", nome:"Sem datas", quarto:"q1"}]);
       if (semDatas.includes("BEGIN:VEVENT")) return "uma ficha sem datas gerou evento";
+      const dois = [{id:"a", nome:"A", quarto:"q1", inicio:"2026-01-01", fim:"2026-02-01"},
+                    {id:"b", nome:"B", quarto:"q1", inicio:"2026-03-01", fim:"2026-04-01"}];
+      const uidAntes = paraICS(dois).match(/UID:b@[^\r\n]+/)[0];
+      const uidDepois = paraICS([dois[1]]).match(/UID:b@[^\r\n]+/)[0];
+      if (uidAntes !== uidDepois)
+        return "apagar uma ficha mudava o UID das outras e duplicava eventos ao reimportar";
     }],
     ["a ajuda cobre gravar e sobreposições (v1.0)", () => {
       const titulos = AJUDA.map(a => a[0]);
