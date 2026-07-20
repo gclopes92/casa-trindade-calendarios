@@ -5,7 +5,8 @@
     "months_ahead": 24,
     "use_cache_on_failure": true,
     "event_summary": "Nao disponivel",
-    "dashboard_days": 210
+    "dashboard_days": 210,
+    "site_url": "https://gclopes92.github.io/casa-trindade-calendarios"
   },
   "properties": [
     {
@@ -33,7 +34,7 @@
             {
               "start": "2026-07-15",
               "end": "2026-08-08",
-              "note": "Nahla - reservou no anuncio do Q2, alojada aqui"
+              "note": "Reserva Flatio no anuncio do Q2, hospede alojada aqui"
             }
           ]
         },
@@ -46,19 +47,19 @@
               "url": "https://api.spotahome.com/public/calendar/1510606.ics?k=5f0de050590d7bb153e1215f8f1591cb4270de2e25b970bd2248a8d7a5afddcd"
             },
             {
-              "platform": "HousingAnywhere",
-              "url": "https://housinganywhere.com/api/v2/listing/2418120/calendar/3c88b00f595f032519419daa6205ae50/en"
-            },
-            {
               "platform": "Flatio",
               "url": "https://app.flatio.com/en/front/calendar/export?hash=ma40jkvo5t30arr84w5s.ics"
+            },
+            {
+              "platform": "HousingAnywhere",
+              "url": ""
             }
           ],
           "manual_blocks": [
             {
               "start": "2026-07-21",
               "end": "2026-08-31",
-              "note": "Hyunjoo - reserva HA no anuncio deste quarto"
+              "note": "Reserva HousingAnywhere no anuncio deste quarto"
             }
           ]
         }
