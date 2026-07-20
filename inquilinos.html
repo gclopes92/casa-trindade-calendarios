@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   REGISTO DE INQUILINOS — Calendar Sync
-  Versao 2.0
+  Versao 2.1
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -237,8 +237,9 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
 
 <script>
 (function(){
-  const PAGINA_VERSAO = "2.0";
-  const HISTORICO = ["2.0 - botões arrumados num menu; o ficheiro reabre num clique em vez de se perder ao mudar de página",
+  const PAGINA_VERSAO = "2.1";
+  const HISTORICO = ["2.1 - o calendário exportado passou a ter quarto, nome e plataforma no título",
+    "2.0 - botões arrumados num menu; o ficheiro reabre num clique em vez de se perder ao mudar de página",
     "1.2 - ligação direta à página de disponibilidade",
     "1.1 - exportar calendário com nomes, para importar no Google",
     "1.0 - primeira versão: substitui a folha de Excel"];
@@ -300,6 +301,7 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
       renda e contactos na descrição.</p>
       <p>No Google Calendar: <b>Definições → Importar e exportar → Importar</b>, e
       escolhes o ficheiro. Fica só na tua conta.</p>
+      <p>O título de cada evento fica <code>Quarto 1 — Nahla Hamoudah (Flatio)</code>.</p>
       <p>É um ficheiro, não uma subscrição: quando mudares fichas, exportas e
       importas outra vez. A alternativa automática é o link de agenda do painel,
       mas esse é público e por isso <b>não</b> leva nomes.</p>`],
@@ -388,6 +390,12 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
 
   // Calendario com nomes, para importar no Google. NAO e um link: e um ficheiro
   // que sai do computador so se a pessoa o partilhar.   // AJUDA: calendário com nomes
+  function nomeQuarto(id){
+    if (!id) return "Sem quarto";
+    const t = String(id).replace(/[-_]+/g, " ").trim();
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
   function paraICS(lista){
     const carimbo = new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
     const semData = i => !i.inicio || !i.fim;
@@ -400,7 +408,8 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
         "DTSTAMP:" + carimbo,
         "DTSTART;VALUE=DATE:" + inq.inicio.replace(/-/g,""),
         "DTEND;VALUE=DATE:" + inq.fim.replace(/-/g,""),
-        "SUMMARY:" + limpa((inq.quarto||"sem quarto") + " · " + (inq.nome||"sem nome")),
+        "SUMMARY:" + limpa(nomeQuarto(inq.quarto) + " — " + (inq.nome||"sem nome") +
+          (inq.plataforma ? " (" + inq.plataforma + ")" : " (direto)")),
         "DESCRIPTION:" + limpa([
           inq.plataforma ? "Plataforma: " + inq.plataforma : "Contrato direto",
           inq.renda ? "Renda: " + inq.renda + " EUR" : "",
@@ -758,8 +767,11 @@ dialog::backdrop{background:rgba(15,32,54,.45)}
     ["o calendário exportado tem nomes e escapa caracteres (v1.1)", () => {
       const ics = paraICS([{id:"a", nome:"Silva; Costa", quarto:"quarto-1",
         inicio:"2026-09-01", fim:"2026-09-10", plataforma:"Flatio"}]);
-      if (!ics.includes("SUMMARY:quarto-1 · Silva\\; Costa"))
-        return "o ponto e vírgula no nome partia o ficheiro";
+      if (!ics.includes("SUMMARY:Quarto 1 — Silva\\; Costa (Flatio)"))
+        return "o título do evento mudou de formato ou o ponto e vírgula partia o ficheiro";
+      const semPlataforma = paraICS([{id:"b", nome:"Ana", quarto:"quarto-2",
+        inicio:"2026-09-01", fim:"2026-09-10"}]);
+      if (!semPlataforma.includes("(direto)")) return "contrato direto ficou sem marca";
       if (!ics.includes("DTSTART;VALUE=DATE:20260901")) return "data mal escrita";
       const semDatas = paraICS([{id:"b", nome:"Sem datas", quarto:"q1"}]);
       if (semDatas.includes("BEGIN:VEVENT")) return "uma ficha sem datas gerou evento";

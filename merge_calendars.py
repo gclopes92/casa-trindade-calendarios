@@ -104,9 +104,14 @@ import time
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
-VERSAO = "3.12"
+VERSAO = "3.14"
 
 HISTORICO = [
+    "3.14 - na fita, cada reserva passa a ser pintada nas datas em que existe; "
+    "antes, um bloco com varias plataformas era dividido em partes iguais e "
+    "dava a entender datas que nao eram as verdadeiras",
+    "3.13 - a Ajuda passou a ter os atalhos para o painel, para o registo e "
+    "para os sitios do GitHub onde se mexe na configuracao",
     "3.12 - site_url na configuracao: os links passam a estar certos mesmo com "
     "a pagina aberta a partir do disco",
     "3.11 - titulos da agenda encurtados: a nota completa passou para a "
@@ -606,6 +611,10 @@ def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
         "ics": rel_path,
         "feeds": feeds_publicados,
         "detalhe_itens": detalhe_itens,
+        "intervalos": [
+            {"start": i[0].isoformat(), "end": i[1].isoformat(), "source": i[2][0]}
+            for i in detalhe_itens
+        ],
         "photo": encontrar_foto(prop["id"], room["id"], room.get("photo")),
         "ok": not hard_failure,
         "sources": source_report,

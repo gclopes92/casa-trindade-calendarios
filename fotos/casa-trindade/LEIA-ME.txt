@@ -1,9 +1,3 @@
-Poe aqui a foto de cada quarto, com o nome do quarto:
-
-  quarto-1.jpg
-  quarto-2.jpg
-
-Aceita .jpg, .jpeg, .png e .webp. Para trocar, sobe outra com o mesmo nome.
-Apaga este ficheiro quando puseres as tuas.
-
-O repositorio e publico: fotos do espaco, sem pessoas nem documentos a vista.
+Poe aqui a foto de cada quarto: quarto-1.jpg, quarto-2.jpg (.jpeg/.png/.webp tambem servem).
+Apaga este ficheiro quando puseres as tuas. O repositorio e publico: fotos do espaco,
+sem pessoas nem documentos a vista.

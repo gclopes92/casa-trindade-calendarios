@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   PAINEL DE DISPONIBILIDADE — Calendar Sync
-  Versao 3.12
+  Versao 3.14
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -294,7 +294,7 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 <script src="output/dashboard.js" onerror="window.SYNC_ERRO=true"></script>
 <script>
 (function(){
-  const PAINEL_VERSAO = "3.12";
+  const PAINEL_VERSAO = "3.14";
 
   // PLATAFORMAS — cor e endereco de cada plataforma. As cores foram tiradas dos
   // proprios logos, exceto onde esta dito. Corrige aqui e em mais lado nenhum.
@@ -348,6 +348,9 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
   // mesma alteracao. Os sitios do codigo que obrigam a rever este texto estao
   // marcados com "AJUDA: <seccao>", e o verificar.py confirma que a seccao existe.
   const AJUDA = [
+    ["atalhos", `<p>Os endereços acima levam a tudo o que precisas. Os três últimos
+      são no GitHub, e é lá que se mexe na configuração — mais nada precisa de lá
+      ser feito.</p>`],
     ["o que isto faz", `<p>Junta os calendários das várias plataformas num único
       ficheiro por quarto e publica-o num endereço fixo. Cada plataforma importa
       esse endereço e passa a ver as reservas feitas em todas as outras.</p>
@@ -595,6 +598,26 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
       const falta = precisa.filter(t => !titulos.includes(t));
       if (falta.length) return "a ajuda perdeu: " + falta.join(", ");
     }],
+    ["cada reserva é pintada nas suas datas (v3.14)", () => {
+      const quarto = {intervalos:[{start:"2026-09-01", end:"2026-09-10", source:"Flatio"}],
+                      blocks:[{start:"2026-01-01", end:"2027-01-01", sources:["Flatio","Spotahome"]}]};
+      const pintaveis = (quarto.intervalos && quarto.intervalos.length)
+        ? quarto.intervalos.map(i => ({ini: d(i.start), fim: d(i.end), fontes:[i.source]}))
+        : [];
+      if (pintaveis.length !== 1) return "deixou de usar os intervalos por origem";
+      if (noites(pintaveis[0].ini, pintaveis[0].fim) !== 9)
+        return "o intervalo pintado nao tem as datas da reserva";
+    }],
+    ["os atalhos apontam para o repositório certo (v3.13)", () => {
+      const guardado = window.SYNC_DATA;
+      window.SYNC_DATA = {site_url: "https://alguem.github.io/o-repo"};
+      const a = atalhos();
+      window.SYNC_DATA = guardado;
+      if (a.configurar !== "https://github.com/alguem/o-repo/edit/main/calendars.json")
+        return "atalho de configuração errado: " + a.configurar;
+      if (a.registo !== "https://alguem.github.io/o-repo/inquilinos.html")
+        return "atalho do registo errado: " + a.registo;
+    }],
     ["o endereço fixado na configuração ganha (v3.12)", () => {
       const guardado = window.SYNC_DATA;
       window.SYNC_DATA = {site_url: "https://exemplo.github.io/repo"};
@@ -637,9 +660,41 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 
 
   // ------------------------------------------------------------------ ajuda
+
+  // Atalhos para os sitios onde se mexe. Calculados a partir do endereco, para
+  // funcionarem em qualquer instalacao sem ninguem os escrever.  // AJUDA: atalhos
+  function atalhos(){
+    const base = (window.SYNC_DATA && window.SYNC_DATA.site_url) || location.origin + location.pathname;
+    const m = base.match(/^https?:\/\/([^.]+)\.github\.io\/([^/]+)/);
+    const site = base.replace(/\/$/, "");
+    if (!m) return {site};
+    const repo = "https://github.com/" + m[1] + "/" + m[2];
+    return {
+      site,
+      registo: site + "/inquilinos.html",
+      configurar: repo + "/edit/main/calendars.json",
+      subir: repo + "/upload/main",
+      sincronizar: repo + "/actions/workflows/sync-calendars.yml",
+      gerados: repo + "/tree/main/output",
+      repositorio: repo
+    };
+  }
+
   function abrirAjuda(){                                        // AJUDA: o que isto faz
     document.getElementById("ajuda-versao").textContent = "v" + PAINEL_VERSAO;
-    document.getElementById("ajuda-corpo").innerHTML =
+    const a = atalhos();
+    const lista = [
+      ["Abrir o painel", a.site, "esta página; guarda nos favoritos"],
+      ["Abrir o registo de inquilinos", a.registo, "as fichas, os contactos"],
+      ["Acrescentar plataforma, quarto ou bloqueio", a.configurar, "edita o calendars.json"],
+      ["Subir ficheiros novos", a.subir, "quando houver versão nova"],
+      ["Correr a sincronização agora", a.sincronizar, "botão Run workflow"],
+      ["Ver os calendários gerados", a.gerados, "a pasta output"]
+    ].filter(l => l[1]);
+    const atalhosHtml = "<h3>atalhos</h3><ul>" + lista.map(([nome, url, nota]) =>
+      '<li><a href="' + url + '" target="_blank" rel="noopener">' + nome + "</a> — " + nota +
+      "</li>").join("") + "</ul>";
+    document.getElementById("ajuda-corpo").innerHTML = atalhosHtml +
       AJUDA.map(([titulo, corpo]) => "<h3>" + titulo + "</h3>" + corpo).join("");
     document.getElementById("dlg-ajuda").showModal();
   }
@@ -920,7 +975,13 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
           pista.appendChild(div);
         });
 
-        estadoQuarto(quarto, inicio).blocos.forEach((b, j) => {
+        // cada reserva pintada nas suas datas. Um bloco fundido com varias
+        // plataformas nao diz onde comeca cada uma — por isso usamos os
+        // intervalos por origem quando existem.        // AJUDA: ler a fita
+        const pintaveis = (quarto.intervalos && quarto.intervalos.length)
+          ? quarto.intervalos.map(i => ({ini: d(i.start), fim: d(i.end), fontes: [i.source]}))
+          : estadoQuarto(quarto, inicio).blocos;
+        pintaveis.forEach((b, j) => {
           const fim = new Date(inicio); fim.setDate(fim.getDate() + total);
           if (b.fim <= inicio || b.ini >= fim) return;
           const de = b.ini > inicio ? b.ini : inicio;
