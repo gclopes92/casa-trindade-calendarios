@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<!--
+  PAINEL DE DISPONIBILIDADE — Calendar Sync
+  Versao 3.1
+
+  ─────────────────────────────────────────────────────────────────────────
+  MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
+  ─────────────────────────────────────────────────────────────────────────
+  O bloco de manutencao completo do projeto esta no topo do merge_calendars.py.
+  Especifico desta pagina:
+
+  1. VERSAO. Subir PAINEL_VERSAO abaixo na mesma alteracao. A versao aparece
+     ao lado do titulo: sem isso e impossivel saber, por uma captura de ecra,
+     se a pessoa esta a ver a versao corrigida ou uma copia antiga.
+
+  2. SEM I/O NESTA PAGINA. Os dados entram por <script src="output/dashboard.js">,
+     que define window.SYNC_DATA. NAO trocar por fetch(): deixaria de funcionar
+     ao abrir o ficheiro a partir do disco (o browser bloqueia por CORS) e
+     acrescentaria uma espera com a pagina vazia.
+
+  3. SEM ARMAZENAMENTO NO BROWSER. Nada de localStorage: o estado verdadeiro
+     esta nos ficheiros gerados, e uma copia local desatualizada seria lida
+     como a realidade.
+
+  4. AUTOTESTES. Correm ao abrir a pagina, so em memoria, e mostram um aviso
+     visivel no topo se falharem. NAO REMOVER: cada um protege uma conta de
+     datas que, errada, mostra um quarto livre quando esta ocupado.
+
+  5. TODO O CONTROLO FAZ ALGUMA COISA. Se acrescentar um botao que so se
+     aplica nalguns casos, esconda-o ou mostre-o inativo com a razao.
+-->
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disponibilidade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0F2036;
+  --paper:#EDF0F4;
+  --surface:#FFFFFF;
+  --azul:#1B4B8F;
+  --azul-fundo:#D7E2F1;
+  --ocre:#A9761B;
+  --tijolo:#A33520;
+  --musgo:#2F6B4F;
+  --texto-suave:#5D708A;
+  --linha:#D5DCE6;
+  --raio:10px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;line-height:1.5;
+}
+.wrap{max-width:1140px;margin:0 auto;padding:0 20px 72px}
+
+/* ---------- topo ---------- */
+header.top{
+  position:sticky;top:0;z-index:30;background:rgba(237,240,244,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--linha);
+}
+.top-inner{max-width:1140px;margin:0 auto;padding:14px 20px;
+  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+h1{
+  font-family:"Bricolage Grotesque","Public Sans",sans-serif;
+  font-weight:800;font-size:clamp(22px,3.4vw,30px);letter-spacing:-.02em;margin:0;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--texto-suave);
+}
+.pill{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.04em;
+  padding:3px 9px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;
+}
+.pill.ok{color:var(--musgo)}
+.pill.aviso{color:var(--ocre)}
+.pill.erro{color:var(--tijolo)}
+.spacer{flex:1}
+.versao{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave);
+  border:1px solid var(--linha);border-radius:999px;padding:2px 7px}
+.versao.desalinhada{color:var(--tijolo);border-color:var(--tijolo)}
+#aviso-testes{max-width:1140px;margin:16px auto 0;padding:12px 16px;border-radius:10px;
+  background:#FBE9E5;border:1px solid var(--tijolo);color:var(--tijolo);font-size:13px}
+#aviso-testes b{display:block;margin-bottom:4px}
+#aviso-testes ul{margin:6px 0 0;padding-left:18px;font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+
+/* ---------- controlo de horizonte ---------- */
+.zoom{display:flex;gap:0;border:1px solid var(--linha);border-radius:999px;overflow:hidden;background:var(--surface)}
+.zoom button{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;border:0;background:transparent;
+  padding:6px 12px;cursor:pointer;color:var(--texto-suave);
+}
+.zoom button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.zoom button:focus-visible{outline:2px solid var(--azul);outline-offset:-2px}
+
+/* ---------- casa ---------- */
+section.casa{margin-top:40px}
+.casa-cab{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.casa-cab h2{
+  font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:19px;
+  letter-spacing:-.01em;margin:0;
+}
+.casa-cab .conta{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--texto-suave)}
+
+/* ---------- fita ---------- */
+.fita{background:var(--surface);border:1px solid var(--linha);border-radius:var(--raio);padding:14px 16px 8px;overflow:hidden}
+.grelha{display:grid;grid-template-columns:minmax(78px,132px) 1fr;gap:8px 14px;align-items:center}
+.meses{position:relative;height:15px}
+.mes{
+  position:absolute;top:0;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--texto-suave);
+  padding-left:4px;border-left:1px solid var(--linha);height:15px;white-space:nowrap;
+}
+.rotulo{
+  font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.pista{
+  position:relative;height:26px;background:var(--azul-fundo);border-radius:5px;overflow:hidden;
+}
+.pista .divisao{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.75)}
+.bloco{
+  position:absolute;top:0;bottom:0;border:0;padding:0;cursor:pointer;
+  background:var(--azul);border-radius:4px;transform-origin:left center;
+}
+.bloco.manual{background:var(--ocre)}
+.bloco:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.hoje{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--tijolo);z-index:5;border-radius:2px}
+@media (prefers-reduced-motion:no-preference){
+  .bloco{animation:crescer .45s cubic-bezier(.22,.8,.3,1) backwards}
+  @keyframes crescer{from{transform:scaleX(0);opacity:.4}to{transform:scaleX(1);opacity:1}}
+}
+.legenda{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--linha)}
+.legenda span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--texto-suave)}
+.amostra{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* ---------- cartões ---------- */
+.cartoes{display:grid;grid-template-columns:repeat(auto-fill,minmax(266px,1fr));gap:12px;margin-top:12px}
+.cartao{background:var(--surface);border:1px solid var(--linha);border-radius:var(--raio);padding:14px 16px}
+.cartao h3{font-size:14.5px;margin:0 0 2px;font-weight:600}
+.estado{font-family:"IBM Plex Mono",monospace;font-size:12px;margin:6px 0 10px}
+.estado.livre{color:var(--musgo)}
+.estado.ocupado{color:var(--azul)}
+.linha-info{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;color:var(--texto-suave)}
+.linha-info b{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--ink)}
+.fontes{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.fonte{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.03em;
+  padding:2px 7px;border-radius:999px;border:1px solid var(--linha);color:var(--texto-suave);
+}
+.fonte.CACHE{border-color:var(--ocre);color:var(--ocre)}
+.fonte.ERRO{border-color:var(--tijolo);color:var(--tijolo);font-weight:500}
+.copiar{
+  margin-top:12px;width:100%;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  padding:8px;border:1px solid var(--ink);background:transparent;color:var(--ink);
+  border-radius:6px;cursor:pointer;letter-spacing:.03em;
+}
+.copiar:hover{background:var(--ink);color:#fff}
+.copiar:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+
+/* ---------- vazio / erro ---------- */
+.vazio{background:var(--surface);border:1px dashed var(--linha);border-radius:var(--raio);
+  padding:28px;margin-top:40px;text-align:center;color:var(--texto-suave)}
+.vazio b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+.dica{font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+
+/* ---------- balão ---------- */
+#balao{
+  position:fixed;z-index:60;background:var(--ink);color:#fff;border-radius:7px;
+  padding:8px 11px;font-size:12px;line-height:1.4;pointer-events:none;opacity:0;
+  transition:opacity .12s;max-width:230px;
+}
+#balao .datas{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#B9CBE4}
+@media (max-width:560px){
+  .grelha{grid-template-columns:72px 1fr;gap:7px 8px}
+  .rotulo{font-size:12px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <h1>Disponibilidade</h1>
+    <span class="versao" id="versao"></span>
+    <span class="eyebrow" id="carimbo">a carregar…</span>
+    <span id="estado-geral"></span>
+    <span class="spacer"></span>
+    <div class="zoom" role="group" aria-label="Horizonte da fita">
+      <button data-dias="90" aria-pressed="false">3 meses</button>
+      <button data-dias="180" aria-pressed="true">6 meses</button>
+      <button data-dias="365" aria-pressed="false">12 meses</button>
+    </div>
+  </div>
+</header>
+
+<div id="aviso-testes" hidden></div>
+<main class="wrap" id="conteudo"></main>
+<div id="balao" role="tooltip"></div>
+
+<script src="output/dashboard.js" onerror="window.SYNC_ERRO=true"></script>
+<script>
+(function(){
+  const PAINEL_VERSAO = "3.1";
+  const MES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  const conteudo = document.getElementById("conteudo");
+  const balao = document.getElementById("balao");
+  let dias = 180;
+
+  const d = iso => { const [a,m,g] = iso.split("-").map(Number); return new Date(a, m-1, g); };
+  const fmt = data => data.getDate() + " " + MES[data.getMonth()];
+  const fmtLongo = data => fmt(data) + " " + data.getFullYear();
+  const noites = (a,b) => Math.round((b-a)/86400000);
+  const hoje = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+
+  function haQuanto(iso){
+    const minutos = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+    if (minutos < 1) return "agora mesmo";
+    if (minutos < 60) return "há " + minutos + " min";
+    const horas = Math.round(minutos/60);
+    if (horas < 24) return "há " + horas + (horas === 1 ? " hora" : " horas");
+    const dd = Math.round(horas/24);
+    return "há " + dd + (dd === 1 ? " dia" : " dias");
+  }
+
+  function urlIcs(rel){
+    if (location.protocol === "file:") return "output/" + rel;
+    return new URL("output/" + rel, location.href).href;
+  }
+
+  function mostrarBalao(alvo, html){
+    balao.innerHTML = html;
+    balao.style.opacity = "1";
+    const r = alvo.getBoundingClientRect();
+    const b = balao.getBoundingClientRect();
+    let x = r.left + r.width/2 - b.width/2;
+    x = Math.max(8, Math.min(x, window.innerWidth - b.width - 8));
+    let y = r.top - b.height - 9;
+    if (y < 8) y = r.bottom + 9;
+    balao.style.left = x + "px";
+    balao.style.top = y + "px";
+  }
+  const esconderBalao = () => { balao.style.opacity = "0"; };
+
+  function marcasDeMes(inicio, total){
+    const marcas = [];
+    const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+    if (cursor < inicio) cursor.setMonth(cursor.getMonth()+1);
+    while (true){
+      const desloc = noites(inicio, cursor);
+      if (desloc >= total) break;
+      marcas.push({pos: desloc/total*100, texto: MES[cursor.getMonth()] +
+        (cursor.getMonth() === 0 ? " " + String(cursor.getFullYear()).slice(2) : "")});
+      cursor.setMonth(cursor.getMonth()+1);
+    }
+    return marcas;
+  }
+
+  function estadoQuarto(quarto, inicio){
+    const blocos = quarto.blocks.map(b => ({ini: d(b.start), fim: d(b.end), fontes: b.sources}));
+    const atual = blocos.find(b => b.ini <= inicio && b.fim > inicio);
+    const seguinte = blocos.filter(b => b.ini > inicio).sort((a,b) => a.ini-b.ini)[0];
+    const limite = new Date(inicio); limite.setDate(limite.getDate()+90);
+    let ocupados = 0;
+    blocos.forEach(b => {
+      const de = b.ini > inicio ? b.ini : inicio;
+      const ate = b.fim < limite ? b.fim : limite;
+      if (ate > de) ocupados += noites(de, ate);
+    });
+    return {blocos, atual, seguinte, ocupacao: Math.round(ocupados/90*100)};
+  }
+
+
+  /* ---------------------------------------------------------------------
+     AUTOTESTES — cada um protege uma conta de datas que, se sair errada,
+     mostra um quarto livre quando esta ocupado. So memoria, sem I/O.
+     NAO REMOVER: se um teste incomodar, a alteracao quebrou o que ele
+     protege. Ao corrigir uma avaria nova, acrescentar aqui o teste.
+     --------------------------------------------------------------------- */
+  const TESTES = [
+    ["contar noites atravessa a mudanca da hora (v3.1)", () => {
+      const n = noites(d("2026-10-24"), d("2026-10-26"));
+      if (n !== 2) return "deu " + n + " noites em vez de 2 no fim de semana da mudanca da hora";
+    }],
+    ["contar noites num ano inteiro (v3.1)", () => {
+      const n = noites(d("2026-01-01"), d("2027-01-01"));
+      if (n !== 365) return "deu " + n + " em vez de 365";
+    }],
+    ["quarto ocupado hoje e reconhecido (v3.0)", () => {
+      const q = {blocks:[{start:"2026-01-01", end:"2030-01-01", sources:["X"]}]};
+      if (!estadoQuarto(q, d("2026-07-20")).atual) return "um quarto ocupado apareceu como livre";
+    }],
+    ["o dia de saida ja conta como livre (v3.0)", () => {
+      const q = {blocks:[{start:"2026-07-01", end:"2026-07-20", sources:["X"]}]};
+      if (estadoQuarto(q, d("2026-07-20")).atual) return "o dia de saida continua a contar como ocupado";
+    }],
+    ["a proxima entrada e a mais proxima (v3.0)", () => {
+      const q = {blocks:[
+        {start:"2026-12-01", end:"2026-12-10", sources:["X"]},
+        {start:"2026-09-01", end:"2026-09-10", sources:["Y"]}]};
+      const e = estadoQuarto(q, d("2026-07-20"));
+      if (!e.seguinte || e.seguinte.ini.getMonth() !== 8) return "escolheu a reserva errada como proxima";
+    }],
+    ["ocupacao a 90 dias nao passa dos 100% (v3.1)", () => {
+      const q = {blocks:[{start:"2020-01-01", end:"2030-01-01", sources:["X"]}]};
+      const o = estadoQuarto(q, d("2026-07-20")).ocupacao;
+      if (o !== 100) return "deu " + o + "% numa reserva que cobre tudo";
+    }],
+    ["bloqueio manual e distinguido da reserva (v3.1)", () => {
+      const manual = ["manual:Obras"].every(f => f.startsWith("manual:"));
+      const plataforma = ["Spotahome"].every(f => f.startsWith("manual:"));
+      if (!manual || plataforma) return "bloqueios manuais e reservas deixaram de ser distinguidos";
+    }],
+    ["as marcas de mes ficam dentro da fita (v3.0)", () => {
+      const m = marcasDeMes(d("2026-07-20"), 180);
+      if (!m.length) return "a fita ficou sem marcas de mes";
+      if (m.some(x => x.pos < 0 || x.pos >= 100)) return "uma marca de mes caiu fora da fita";
+    }]
+  ];
+
+  function correrTestes(){
+    const falhas = [];
+    TESTES.forEach(([nome, verificacao]) => {
+      let queixa;
+      try { queixa = verificacao(); } catch (e) { queixa = "rebentou: " + e.message; }
+      if (queixa) falhas.push(nome + " → " + queixa);
+    });
+    if (falhas.length){
+      const caixa = document.getElementById("aviso-testes");
+      caixa.hidden = false;
+      caixa.innerHTML = "<b>Este painel tem um problema — os números podem estar errados</b>" +
+        "Falharam " + falhas.length + " verificações internas. Não tomes decisões de " +
+        "disponibilidade por esta página até isto estar resolvido." +
+        "<ul>" + falhas.map(f => "<li>" + f + "</li>").join("") + "</ul>";
+    }
+    return falhas;
+  }
+
+  function desenhar(){
+    const dados = window.SYNC_DATA;
+    conteudo.innerHTML = "";
+
+    if (window.SYNC_ERRO || !dados){
+      conteudo.innerHTML = '<div class="vazio"><b>Ainda não há dados de sincronização</b>' +
+        'Corre o merge_calendars.py — ele escreve output/dashboard.js, que é o que esta página lê.' +
+        '<div class="dica" style="margin-top:10px">python merge_calendars.py</div></div>';
+      document.getElementById("carimbo").textContent = "sem dados";
+      return;
+    }
+
+    document.getElementById("carimbo").textContent = "sincronizado " + haQuanto(dados.generated_at);
+
+    const chip = document.getElementById("versao");
+    const motor = dados.engine_version;
+    if (motor && motor !== PAINEL_VERSAO){
+      chip.className = "versao desalinhada";
+      chip.textContent = "painel v" + PAINEL_VERSAO + " · motor v" + motor;
+      chip.title = "O painel e o motor estão em versões diferentes. Atualiza o ficheiro mais antigo.";
+    } else {
+      chip.textContent = "v" + PAINEL_VERSAO;
+    }
+    const todasFontes = dados.properties.flatMap(p => p.rooms.flatMap(q => q.sources));
+    const erros = todasFontes.filter(f => f.state === "ERRO").length;
+    const caches = todasFontes.filter(f => f.state === "CACHE").length;
+    const geral = document.getElementById("estado-geral");
+    geral.className = "pill " + (erros ? "erro" : caches ? "aviso" : "ok");
+    geral.textContent = erros
+      ? erros + (erros === 1 ? " fonte em erro" : " fontes em erro")
+      : caches
+        ? caches + (caches === 1 ? " fonte em cache" : " fontes em cache")
+        : todasFontes.length + " fontes ligadas";
+
+    if (!dados.properties.length){
+      conteudo.innerHTML = '<div class="vazio"><b>Nenhuma casa configurada</b>' +
+        'Acrescenta uma casa e os links das plataformas no calendars.json.</div>';
+      return;
+    }
+
+    const inicio = hoje();
+    const total = dias;
+
+    dados.properties.forEach(casa => {
+      const seccao = document.createElement("section");
+      seccao.className = "casa";
+
+      const nQuartos = casa.rooms.length;
+      const livres = casa.rooms.filter(q => !estadoQuarto(q, inicio).atual).length;
+      seccao.innerHTML =
+        '<div class="casa-cab"><h2>' + casa.name + '</h2>' +
+        '<span class="conta">' + nQuartos + (nQuartos === 1 ? " quarto" : " quartos") +
+        " · " + livres + " livre" + (livres === 1 ? "" : "s") + " hoje</span></div>";
+
+      // fita
+      const fita = document.createElement("div");
+      fita.className = "fita";
+      const grelha = document.createElement("div");
+      grelha.className = "grelha";
+
+      grelha.appendChild(document.createElement("div"));
+      const faixaMeses = document.createElement("div");
+      faixaMeses.className = "meses";
+      marcasDeMes(inicio, total).forEach(m => {
+        const el = document.createElement("span");
+        el.className = "mes";
+        el.style.left = m.pos + "%";
+        el.textContent = m.texto;
+        faixaMeses.appendChild(el);
+      });
+      grelha.appendChild(faixaMeses);
+
+      casa.rooms.forEach((quarto, i) => {
+        const rotulo = document.createElement("div");
+        rotulo.className = "rotulo";
+        rotulo.textContent = quarto.name;
+        grelha.appendChild(rotulo);
+
+        const pista = document.createElement("div");
+        pista.className = "pista";
+        marcasDeMes(inicio, total).forEach(m => {
+          const div = document.createElement("div");
+          div.className = "divisao";
+          div.style.left = m.pos + "%";
+          pista.appendChild(div);
+        });
+
+        estadoQuarto(quarto, inicio).blocos.forEach((b, j) => {
+          const fim = new Date(inicio); fim.setDate(fim.getDate() + total);
+          if (b.fim <= inicio || b.ini >= fim) return;
+          const de = b.ini > inicio ? b.ini : inicio;
+          const ate = b.fim < fim ? b.fim : fim;
+          const barra = document.createElement("button");
+          const manual = b.fontes.every(f => f.startsWith("manual:"));
+          barra.className = "bloco" + (manual ? " manual" : "");
+          barra.style.left = (noites(inicio, de)/total*100) + "%";
+          barra.style.width = Math.max(noites(de, ate)/total*100, 0.35) + "%";
+          barra.style.animationDelay = (i*60 + j*25) + "ms";
+          const nomes = b.fontes.map(f => f.replace(/^manual:/, "")).join(" + ");
+          const texto = fmtLongo(b.ini) + " → " + fmtLongo(b.fim) + " · " +
+                        noites(b.ini, b.fim) + " noites";
+          barra.setAttribute("aria-label", quarto.name + ": ocupado de " + texto + " (" + nomes + ")");
+          const html = "<b>" + nomes + "</b><div class='datas'>" + texto + "</div>";
+          barra.addEventListener("mouseenter", () => mostrarBalao(barra, html));
+          barra.addEventListener("focus", () => mostrarBalao(barra, html));
+          barra.addEventListener("mouseleave", esconderBalao);
+          barra.addEventListener("blur", esconderBalao);
+          barra.addEventListener("click", e => { e.stopPropagation(); mostrarBalao(barra, html); });
+          pista.appendChild(barra);
+        });
+
+        const marcaHoje = document.createElement("div");
+        marcaHoje.className = "hoje";
+        marcaHoje.style.left = "0%";
+        marcaHoje.title = "hoje";
+        pista.appendChild(marcaHoje);
+
+        grelha.appendChild(pista);
+      });
+
+      fita.appendChild(grelha);
+      fita.insertAdjacentHTML("beforeend",
+        '<div class="legenda">' +
+        '<span><i class="amostra" style="background:var(--azul-fundo)"></i>livre</span>' +
+        '<span><i class="amostra" style="background:var(--azul)"></i>reservado</span>' +
+        '<span><i class="amostra" style="background:var(--ocre)"></i>bloqueio meu</span>' +
+        '<span><i class="amostra" style="background:var(--tijolo);width:3px"></i>hoje</span>' +
+        '</div>');
+      seccao.appendChild(fita);
+
+      // cartões
+      const cartoes = document.createElement("div");
+      cartoes.className = "cartoes";
+      casa.rooms.forEach(quarto => {
+        const e = estadoQuarto(quarto, inicio);
+        const cartao = document.createElement("div");
+        cartao.className = "cartao";
+
+        let estadoHtml;
+        if (e.atual){
+          estadoHtml = '<div class="estado ocupado">Ocupado até ' + fmt(e.atual.fim) +
+            " · " + noites(inicio, e.atual.fim) + " noites</div>";
+        } else if (e.seguinte){
+          estadoHtml = '<div class="estado livre">Livre · próxima entrada ' + fmt(e.seguinte.ini) + "</div>";
+        } else {
+          estadoHtml = '<div class="estado livre">Livre · sem reservas marcadas</div>';
+        }
+
+        const proxima = e.seguinte ? fmt(e.seguinte.ini) : "—";
+
+        cartao.innerHTML =
+          "<h3>" + quarto.name + "</h3>" + estadoHtml +
+          '<div class="linha-info"><span>Ocupação nos próximos 90 dias</span><b>' + e.ocupacao + "%</b></div>" +
+          '<div class="linha-info"><span>Próxima entrada</span><b>' + proxima + "</b></div>" +
+          '<div class="linha-info"><span>Blocos no calendário</span><b>' + quarto.blocks.length + "</b></div>" +
+          '<div class="fontes">' + quarto.sources.map(f =>
+            '<span class="fonte ' + f.state + '">' + f.platform + " · " + f.state + "</span>").join("") +
+          "</div>";
+
+        const botao = document.createElement("button");
+        botao.className = "copiar";
+        botao.textContent = "Copiar link do calendário";
+        botao.addEventListener("click", async () => {
+          const url = urlIcs(quarto.ics);
+          try {
+            await navigator.clipboard.writeText(url);
+            botao.textContent = "Link copiado";
+          } catch {
+            botao.textContent = url;
+          }
+          setTimeout(() => { botao.textContent = "Copiar link do calendário"; }, 2200);
+        });
+        cartao.appendChild(botao);
+        cartoes.appendChild(cartao);
+      });
+      seccao.appendChild(cartoes);
+      conteudo.appendChild(seccao);
+    });
+  }
+
+  document.querySelectorAll(".zoom button").forEach(botao => {
+    botao.addEventListener("click", () => {
+      dias = Number(botao.dataset.dias);
+      document.querySelectorAll(".zoom button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b === botao)));
+      desenhar();
+    });
+  });
+  correrTestes();
+  document.getElementById("versao").textContent = "v" + PAINEL_VERSAO;
+  document.addEventListener("click", esconderBalao);
+  window.addEventListener("resize", esconderBalao);
+  desenhar();
+})();
+</script>
+</body>
+</html>
