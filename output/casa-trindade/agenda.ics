@@ -1,0 +1,89 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Calendar Sync 3.10//PT
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Casa Trindade (agenda)
+X-WR-TIMEZONE:Europe/Lisbon
+X-GENERATED-AT:20260720T200406Z
+BEGIN:VEVENT
+UID:f2290aca990e551c@casa-trindade.local
+DTSTAMP:20260720T200406Z
+DTSTART;VALUE=DATE:20260715
+DTEND;VALUE=DATE:20260808
+SUMMARY:Quarto 2 · Flatio
+DESCRIPTION:24 noites. Origem: Flatio. Sem nomes por ser publico.
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+X-CT-ORIGIN:casa-trindade
+END:VEVENT
+BEGIN:VEVENT
+UID:087848b32ebf5ac8@casa-trindade.local
+DTSTAMP:20260720T200406Z
+DTSTART;VALUE=DATE:20260715
+DTEND;VALUE=DATE:20260808
+SUMMARY:Quarto 1 · Nahla - reservou no anuncio do Q2, alojada aqui
+DESCRIPTION:24 noites. Origem: manual:Nahla - reservou no anuncio do Q2, a
+ lojada aqui. Sem nomes por ser publico.
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+X-CT-ORIGIN:casa-trindade
+END:VEVENT
+BEGIN:VEVENT
+UID:f6a5e47ec3369beb@casa-trindade.local
+DTSTAMP:20260720T200406Z
+DTSTART;VALUE=DATE:20260719
+DTEND;VALUE=DATE:20260808
+SUMMARY:Quarto 1 · HousingAnywhere
+DESCRIPTION:20 noites. Origem: HousingAnywhere. Sem nomes por ser publico.
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+X-CT-ORIGIN:casa-trindade
+END:VEVENT
+BEGIN:VEVENT
+UID:9d7c1eb848bf3bfa@casa-trindade.local
+DTSTAMP:20260720T200406Z
+DTSTART;VALUE=DATE:20260721
+DTEND;VALUE=DATE:20260831
+SUMMARY:Quarto 2 · Hyunjoo - reserva HA no anuncio deste quarto
+DESCRIPTION:41 noites. Origem: manual:Hyunjoo - reserva HA no anuncio dest
+ e quarto. Sem nomes por ser publico.
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+X-CT-ORIGIN:casa-trindade
+END:VEVENT
+BEGIN:VEVENT
+UID:489fea5a08df6e41@casa-trindade.local
+DTSTAMP:20260720T200406Z
+DTSTART;VALUE=DATE:20260901
+DTEND;VALUE=DATE:20261218
+SUMMARY:Quarto 1 · HousingAnywhere
+DESCRIPTION:108 noites. Origem: HousingAnywhere. Sem nomes por ser publico
+ .
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+X-CT-ORIGIN:casa-trindade
+END:VEVENT
+BEGIN:VEVENT
+UID:efc1ee74387957d2@casa-trindade.local
+DTSTAMP:20260720T200406Z
+DTSTART;VALUE=DATE:20260901
+DTEND;VALUE=DATE:20261218
+SUMMARY:Quarto 1 · Spotahome
+DESCRIPTION:108 noites. Origem: Spotahome. Sem nomes por ser publico.
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+X-CT-ORIGIN:casa-trindade
+END:VEVENT
+BEGIN:VEVENT
+UID:b9916f3a60f8dc4d@casa-trindade.local
+DTSTAMP:20260720T200406Z
+DTSTART;VALUE=DATE:20260901
+DTEND;VALUE=DATE:20270131
+SUMMARY:Quarto 2 · Spotahome
+DESCRIPTION:152 noites. Origem: Spotahome. Sem nomes por ser publico.
+TRANSP:OPAQUE
+STATUS:CONFIRMED
+X-CT-ORIGIN:casa-trindade
+END:VEVENT
+END:VCALENDAR
