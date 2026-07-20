@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   PAINEL DE DISPONIBILIDADE — Calendar Sync
-  Versao 3.14
+  Versao 3.15
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -294,7 +294,7 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 <script src="output/dashboard.js" onerror="window.SYNC_ERRO=true"></script>
 <script>
 (function(){
-  const PAINEL_VERSAO = "3.14";
+  const PAINEL_VERSAO = "3.15";
 
   // PLATAFORMAS — cor e endereco de cada plataforma. As cores foram tiradas dos
   // proprios logos, exceto onde esta dito. Corrige aqui e em mais lado nenhum.
@@ -411,8 +411,8 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
       <p>Os dados de ocupação são gerados sozinhos de 15 em 15 minutos. Os dados dos
       inquilinos escreve-los tu.</p>`],
     ["calendário pessoal", `<p>Os links em <b>Para o teu calendário pessoal</b> são
-      diferentes dos outros: cada reserva é um evento separado, com o quarto e a
-      plataforma no título. Servem para subscreveres no Google Calendar e veres a
+      diferentes dos outros: dão <b>uma banda por quarto</b>. Cada período ocupado
+      é um evento, com o quarto e as plataformas de origem no título. Servem para subscreveres no Google Calendar e veres a
       casa ao lado dos teus compromissos.</p>
       <p>No Google: <b>Outros calendários → + → Subscrever por URL</b>, e colas o
       link. Atualiza-se sozinho, embora o Google só releia de poucas em poucas

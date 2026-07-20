@@ -104,9 +104,11 @@ import time
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
-VERSAO = "3.14"
+VERSAO = "3.15"
 
 HISTORICO = [
+    "3.15 - a agenda para o calendario pessoal passou a ter um evento por "
+    "periodo ocupado, em vez de um por plataforma: uma banda por quarto",
     "3.14 - na fita, cada reserva passa a ser pintada nas datas em que existe; "
     "antes, um bloco com varias plataformas era dividido em partes iguais e "
     "dava a entender datas que nao eram as verdadeiras",
@@ -585,11 +587,13 @@ def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
 
     rel_path = f"{prop['id']}/{room['id']}.ics"
 
+    # A agenda pessoal leva UM evento por periodo ocupado, nao um por plataforma:
+    # no calendario, tres bandas para a mesma estadia sao ruido. As plataformas
+    # de origem vao no titulo e na descricao.        // uma banda por quarto
     detalhe_itens = []
     if not hard_failure:
-        for inicio, fim, origem in sorted(clipped):
-            if fim > inicio:
-                detalhe_itens.append((inicio, fim, [origem], room["name"]))
+        for inicio, fim, origens in blocks:
+            detalhe_itens.append((inicio, fim, origens, room["name"]))
         caminho_detalhe = os.path.join(OUTPUT_DIR, prop["id"], f"{room['id']}--detalhe.ics")
         with open(caminho_detalhe, "w", encoding="utf-8") as handle:
             handle.write(build_ics(f"{calname_base} (detalhe)", detalhe_itens,
@@ -810,6 +814,23 @@ def _t18_feed_exclui_a_propria_plataforma():
         return "os bloqueios manuais deixaram de ir em todos os calendarios"
 
 
+def _t20_agenda_uma_banda_por_periodo():
+    """Duas plataformas a cobrir a mesma estadia dao um evento, nao dois."""
+    intervalos = [
+        (date(2026, 7, 21), date(2026, 8, 31), "HousingAnywhere"),
+        (date(2026, 7, 15), date(2026, 8, 8), "Flatio"),
+    ]
+    fundidos = merge_intervals(intervalos)
+    if len(fundidos) != 1:
+        return f"esperava um periodo ocupado, obtive {len(fundidos)}"
+    itens = [(f[0], f[1], f[2], "Quarto 2") for f in fundidos]
+    ics = build_ics("x", itens, dict(DEFAULT_SETTINGS), detalhe=True)
+    if ics.count("BEGIN:VEVENT") != 1:
+        return "a agenda voltou a criar um evento por plataforma"
+    if "Flatio" not in ics or "HousingAnywhere" not in ics:
+        return "o evento unico perdeu a origem das reservas"
+
+
 def _t19_titulo_sem_nomes():
     if rotulo_curto("Nahla - reservou no anuncio do Q2, alojada aqui") != "Nahla":
         return "a nota longa deixou de ser encurtada para o titulo"
@@ -862,6 +883,7 @@ AUTOTESTES = [
     ("a foto do quarto e procurada pelo nome (v3.5)", _t16_caminhos_de_foto),
     ("um calendario por plataforma (v3.7)", _t17_feeds_por_plataforma),
     ("a agenda pessoal nao leva nomes (v3.8)", _t19_titulo_sem_nomes),
+    ("uma banda por periodo ocupado (v3.15)", _t20_agenda_uma_banda_por_periodo),
     ("cada calendario exclui a sua plataforma (v3.7)", _t18_feed_exclui_a_propria_plataforma),
 ]
 
