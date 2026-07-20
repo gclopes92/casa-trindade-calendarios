@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<!--
+  REGISTO DE INQUILINOS — Calendar Sync
+  Versao 1.2
+
+  ─────────────────────────────────────────────────────────────────────────
+  MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
+  ─────────────────────────────────────────────────────────────────────────
+  O bloco de manutencao do projeto esta no topo do merge_calendars.py.
+  Especifico desta pagina, e nao negociavel:
+
+  1. OS DADOS NUNCA SAEM DO COMPUTADOR. Esta pagina le e escreve um ficheiro
+     escolhido pela pessoa. NAO acrescentar envio para servidor, telemetria,
+     tipos de letra externos nem qualquer pedido de rede. O repositorio e
+     publico e o ficheiro tem numeros de documento, telefones e moradas.
+     Uma unica chamada de rede nesta pagina e uma fuga de dados pessoais.
+
+  2. NADA DE localStorage NEM sessionStorage. Guardar dados pessoais no
+     browser deixa copias em maquinas partilhadas, fora do controlo da pessoa
+     e invisiveis para ela. O ficheiro escolhido e a unica verdade.
+
+  3. NUNCA PERDER DADOS. Ao gravar: ler, fundir, escrever. Se o browser nao
+     suportar gravacao direta, o aviso de "por gravar" fica visivel e NAO se
+     esconde — e a unica coisa que impede alguem fechar a janela e perder uma
+     tarde de trabalho.
+
+  4. VERSAO E HISTORICO. Subir PAGINA_VERSAO e acrescentar linha ao HISTORICO
+     na mesma alteracao. A versao aparece ao lado do titulo.
+
+  5. AJUDA. O texto esta em AJUDA. Se mudares comportamento, ATUALIZA-O na
+     mesma alteracao. Os sitios que obrigam a rever estao marcados com
+     "AJUDA: <seccao>".
+
+  6. AUTOTESTES. Correm ao abrir, so em memoria, e mostram aviso visivel se
+     falharem. NAO REMOVER: protegem contas de datas e a detecao de
+     sobreposicoes, que e o que evita arrendar o mesmo quarto duas vezes.
+
+  7. MINIMIZAR O QUE SE GUARDA. Campos novos com dados pessoais so entram se
+     houver razao concreta. Numero de documento e o mais sensivel do
+     ficheiro: existe porque os contratos e as obrigacoes fiscais o exigem.
+
+  8. REGISTO DE AVARIAS: (ainda nenhuma)
+
+  9. PENDENTE:
+     - Anexar contratos e recibos — adiado; ficheiros grandes dentro do JSON
+       tornam a gravacao lenta e fragil. Melhor guardar ao lado, numa pasta.
+     - Recibos de renda e mapa de pagamentos — a decidir depois de isto
+       estar em uso; o Excel tambem nao os fazia.
+-->
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registo de inquilinos</title>
+<style>
+:root{
+  --ink:#0F2036; --paper:#EDF0F4; --surface:#FFFFFF; --azul:#1B4B8F;
+  --azul-fundo:#D7E2F1; --ocre:#A9761B; --tijolo:#A33520; --musgo:#2F6B4F;
+  --texto-suave:#5D708A; --linha:#D5DCE6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5;
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 72px}
+header.top{position:sticky;top:0;z-index:30;background:rgba(237,240,244,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--linha)}
+.top-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;
+  align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(20px,3vw,27px);letter-spacing:-.02em;margin:0;font-weight:700}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.versao{font-size:11px;color:var(--texto-suave);border:1px solid var(--linha);
+  border-radius:999px;padding:2px 7px}
+.spacer{flex:1}
+.acao{font-size:11.5px;letter-spacing:.04em;padding:7px 13px;border-radius:999px;
+  border:1px solid var(--linha);background:var(--surface);color:var(--ink);cursor:pointer;
+  font-family:ui-monospace,Menlo,Consolas,monospace}
+.acao:hover{border-color:var(--ink)}
+.acao:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+.acao.primaria{background:var(--ink);color:#fff;border-color:var(--ink)}
+.acao.perigo{color:var(--tijolo);border-color:var(--tijolo)}
+.estado-ficheiro{font-size:11.5px;color:var(--texto-suave);
+  font-family:ui-monospace,Menlo,Consolas,monospace}
+.estado-ficheiro.porgravar{color:var(--tijolo);font-weight:600}
+
+.faixa{margin:16px auto 0;max-width:1180px;padding:12px 16px;border-radius:10px;font-size:13px}
+.faixa.alerta{background:#FBE9E5;border:1px solid var(--tijolo);color:var(--tijolo)}
+.faixa.aviso{background:#FBF3E3;border:1px solid var(--ocre);color:var(--ocre)}
+.faixa ul{margin:6px 0 0;padding-left:18px}
+
+.barra{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:22px 0 12px}
+.barra input[type=search]{flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--linha);
+  border-radius:8px;background:var(--surface);color:var(--ink);font-size:13.5px}
+.barra input:focus{outline:2px solid var(--azul);outline-offset:-1px}
+.filtro{display:flex;border:1px solid var(--linha);border-radius:999px;overflow:hidden;
+  background:var(--surface)}
+.filtro button{border:0;background:transparent;padding:7px 13px;cursor:pointer;font-size:11.5px;
+  color:var(--texto-suave);font-family:ui-monospace,Menlo,Consolas,monospace}
+.filtro button[aria-pressed=true]{background:var(--ink);color:#fff}
+
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--linha);
+  border-radius:10px;overflow:hidden;font-size:13.5px}
+th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--texto-suave);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--linha);
+  cursor:pointer;white-space:nowrap;user-select:none}
+th:hover{color:var(--ink)}
+td{padding:10px 12px;border-bottom:1px solid var(--linha);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.linha:hover{background:var(--paper)}
+tbody tr{cursor:pointer}
+.nome{font-weight:600}
+.sub{font-size:11.5px;color:var(--texto-suave)}
+.etq{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:999px;
+  border:1px solid currentColor;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+.etq.atual{color:var(--musgo)}
+.etq.futuro{color:var(--azul)}
+.etq.passado{color:var(--texto-suave)}
+.etq.incompleto{color:var(--ocre)}
+.num{font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+.vazio-tabela{padding:40px 20px;text-align:center;color:var(--texto-suave);background:var(--surface);
+  border:1px dashed var(--linha);border-radius:10px}
+.vazio-tabela b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+
+dialog{border:0;border-radius:14px;padding:0;max-width:660px;width:calc(100% - 32px);
+  background:var(--surface);color:var(--ink);box-shadow:0 18px 50px rgba(15,32,54,.22)}
+dialog::backdrop{background:rgba(15,32,54,.45)}
+.dlg-topo{display:flex;align-items:baseline;gap:12px;padding:18px 22px 12px;
+  border-bottom:1px solid var(--linha)}
+.dlg-topo h2{font-size:17px;margin:0;font-weight:600}
+.dlg-corpo{padding:16px 22px;max-height:min(70vh,640px);overflow:auto}
+.dlg-rodape{display:flex;gap:8px;padding:14px 22px;border-top:1px solid var(--linha);
+  align-items:center;flex-wrap:wrap}
+.fechar{margin-left:auto;border:0;background:transparent;font-size:20px;cursor:pointer;
+  color:var(--texto-suave);padding:0 4px}
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+.campo.largo{grid-column:1 / -1}
+.campo label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-suave)}
+.campo input,.campo select,.campo textarea{padding:7px 10px;border:1px solid var(--linha);
+  border-radius:7px;background:var(--paper);color:var(--ink);font-size:13.5px;font-family:inherit}
+.campo input:focus,.campo select:focus,.campo textarea:focus{outline:2px solid var(--azul);
+  outline-offset:-1px;background:var(--surface)}
+.campo .nota{font-size:11px;color:var(--texto-suave)}
+.queixas{margin:12px 0 0;padding:10px 12px;border-radius:8px;background:#FBE9E5;
+  border:1px solid var(--tijolo);color:var(--tijolo);font-size:12.5px}
+.queixas ul{margin:4px 0 0;padding-left:18px}
+.dlg-corpo h3{font-size:14px;margin:18px 0 4px}
+.dlg-corpo h3:first-child{margin-top:0}
+.dlg-corpo p{margin:0 0 8px;font-size:13.5px;color:var(--texto-suave)}
+.dlg-corpo code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;
+  background:var(--paper);padding:1px 5px;border-radius:4px;word-break:break-all}
+@media (max-width:640px){
+  .campos{grid-template-columns:1fr}
+  .esconde-movel{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <h1>Inquilinos</h1>
+    <span class="versao" id="versao"></span>
+    <span class="estado-ficheiro" id="estado-ficheiro">nenhum ficheiro aberto</span>
+    <span class="spacer"></span>
+    <a class="acao" href="index.html" style="text-decoration:none;display:inline-block;line-height:1.35">Disponibilidade</a>
+    <button class="acao" id="btn-abrir">Abrir ficheiro</button>
+    <button class="acao" id="btn-guardar">Guardar</button>
+    <button class="acao" id="btn-exportar">Exportar CSV</button>
+    <button class="acao" id="btn-agenda">Exportar calendário</button>
+  <button class="acao" id="btn-bloqueios">Bloqueios para o calendário</button>
+    <button class="acao" id="btn-ajuda">Ajuda</button>
+  </div>
+</header>
+
+<div id="aviso-testes" class="faixa alerta" hidden></div>
+<div id="aviso-conflitos" class="faixa aviso" hidden></div>
+
+<main class="wrap">
+  <div class="barra">
+    <input type="search" id="procura" placeholder="Procurar por nome, email, quarto, plataforma…"
+           aria-label="Procurar inquilino">
+    <div class="filtro" role="group" aria-label="Filtrar por estado">
+      <button data-filtro="todos" aria-pressed="true">todos</button>
+      <button data-filtro="atual" aria-pressed="false">atuais</button>
+      <button data-filtro="futuro" aria-pressed="false">futuros</button>
+      <button data-filtro="passado" aria-pressed="false">passados</button>
+    </div>
+    <button class="acao primaria" id="btn-novo">Novo inquilino</button>
+  </div>
+  <div id="tabela"></div>
+</main>
+
+<dialog id="dlg-ficha">
+  <div class="dlg-topo"><h2 id="ficha-titulo">Inquilino</h2>
+    <button class="fechar" aria-label="Fechar">&times;</button></div>
+  <div class="dlg-corpo">
+    <div class="campos" id="ficha-campos"></div>
+    <div class="queixas" id="ficha-queixas" hidden></div>
+  </div>
+  <div class="dlg-rodape">
+    <button class="acao primaria" id="ficha-guardar">Guardar alterações</button>
+    <button class="acao perigo" id="ficha-apagar">Apagar</button>
+    <span class="spacer"></span>
+    <span class="sub" id="ficha-derivados"></span>
+  </div>
+</dialog>
+
+<dialog id="dlg-texto">
+  <div class="dlg-topo"><h2 id="texto-titulo"></h2>
+    <button class="fechar" aria-label="Fechar">&times;</button></div>
+  <div class="dlg-corpo" id="texto-corpo"></div>
+  <div class="dlg-rodape"><button class="acao primaria" id="texto-copiar">Copiar</button></div>
+</dialog>
+
+<dialog id="dlg-ajuda">
+  <div class="dlg-topo"><h2>Ajuda</h2><span class="versao" id="ajuda-versao"></span>
+    <button class="fechar" aria-label="Fechar">&times;</button></div>
+  <div class="dlg-corpo" id="ajuda-corpo"></div>
+</dialog>
+
+<script>
+(function(){
+  const PAGINA_VERSAO = "1.2";
+  const HISTORICO = ["1.2 - ligação direta à página de disponibilidade",
+    "1.1 - exportar calendário com nomes, para importar no Google",
+    "1.0 - primeira versão: substitui a folha de Excel"];
+
+  // Campos do ficheiro. Ordem so afeta o formulario e o CSV.
+  // Campos novos entram NO FIM e toleram valor vazio. Nunca renomear os
+  // existentes sem converter os ficheiros ja gravados.  // AJUDA: o ficheiro
+  const CAMPOS = [
+    ["nome",          "Nome",              "text",  true],
+    ["quarto",        "Quarto",            "text",  true],
+    ["casa",          "Casa",              "text",  false],
+    ["inicio",        "Entrada",           "date",  true],
+    ["fim",           "Saída",             "date",  true],
+    ["renda",         "Renda mensal (€)",  "number", false],
+    ["plataforma",    "Plataforma",        "text",  false],
+    ["email",         "E-mail",            "email", false],
+    ["telefone",      "Telefone",          "tel",   false],
+    ["documento",     "Documento",         "text",  false],
+    ["nascimento",    "Nascimento",        "date",  false],
+    ["nacionalidade", "Nacionalidade",     "text",  false],
+    ["morada",        "Morada",            "text",  false],
+    ["notas",         "Notas",             "textarea", false]
+  ];
+
+  const AJUDA = [
+    ["onde ficam os dados", `<p>Neste ficheiro no teu computador, e em mais lado nenhum.
+      Esta página não envia nada para a internet: lê e grava o ficheiro que lhe indicas.</p>
+      <p>O repositório onde o código vive é público — por isso o ficheiro dos inquilinos
+      <b>nunca</b> deve lá ser colocado. Guarda-o numa pasta do OneDrive: ficas com cópia
+      de segurança e histórico de versões.</p>`],
+    ["as duas páginas", `<p>Esta é a página dos <b>inquilinos</b>: fichas, contactos
+      e contratos. O botão <b>Disponibilidade</b> no topo leva à outra, que mostra a
+      ocupação dos quartos e dá os links para as plataformas.</p>
+      <p>São o mesmo sítio. A diferença está nos dados: a de disponibilidade é gerada
+      sozinha e não tem nada pessoal; esta lê um ficheiro teu, que nunca sai do
+      computador.</p>`],
+    ["abrir e guardar", `<p>Botão <b>Abrir ficheiro</b> e escolhes o
+      <code>inquilinos.json</code>. A partir daí, cada alteração é gravada sozinha.</p>
+      <p>Se o teu browser não permitir gravar diretamente (acontece no Firefox, no
+      Safari e no telemóvel), aparece um aviso vermelho <b>por gravar</b> que só
+      desaparece quando carregares em <b>Guardar</b> e descarregares o ficheiro por
+      cima do antigo. Enquanto esse aviso estiver aceso, não feches a janela.</p>
+      <p>No Chrome e no Edge a gravação é direta e o aviso não aparece.</p>`],
+    ["o ficheiro", `<p>É um <code>.json</code>, texto simples. Podes abri-lo no
+      Bloco de Notas, copiá-lo, guardá-lo onde quiseres.</p>
+      <p>O <b>Exportar CSV</b> serve para abrir no Excel — para o contabilista, ou para
+      uma cópia extra. É só de saída: o ficheiro de trabalho continua a ser o
+      <code>.json</code>.</p>`],
+    ["sobreposições", `<p>A faixa amarela no topo aparece quando duas pessoas estão
+      marcadas para o mesmo quarto em datas que se cruzam, ou quando falta o quarto
+      numa ficha. É o erro que custa dinheiro e a folha de Excel não o via.</p>
+      <p>A saída não conta como noite ocupada: alguém que sai a 8 e outro que entra
+      a 8 não é sobreposição.</p>`],
+    ["calendário com nomes", `<p>Botão <b>Exportar calendário</b>: dá um ficheiro
+      <code>.ics</code> com uma entrada por inquilino — quarto, nome, plataforma,
+      renda e contactos na descrição.</p>
+      <p>No Google Calendar: <b>Definições → Importar e exportar → Importar</b>, e
+      escolhes o ficheiro. Fica só na tua conta.</p>
+      <p>É um ficheiro, não uma subscrição: quando mudares fichas, exportas e
+      importas outra vez. A alternativa automática é o link de agenda do painel,
+      mas esse é público e por isso <b>não</b> leva nomes.</p>`],
+    ["contratos diretos", `<p>Um contrato feito fora das plataformas não aparece em
+      calendário nenhum, e as plataformas continuam a vender essas datas.</p>
+      <p>Botão <b>Bloqueios para o calendário</b>: gera o texto dos
+      <code>manual_blocks</code> a partir das fichas cuja plataforma está vazia ou
+      diz <code>Direto</code>. Colas no <code>calendars.json</code> no GitHub.</p>`],
+    ["o que guardar", `<p>Guarda o que precisas para os contratos e para as
+      obrigações fiscais, e não mais. O número de documento é o dado mais sensível
+      do ficheiro — se não precisas dele para um inquilino, deixa vazio.</p>`]
+  ];
+
+  // ---------------------------------------------------------------- utilidades
+  const $ = id => document.getElementById(id);
+  const d = iso => { const [a,m,g] = (iso||"").split("-").map(Number);
+    return (a && m && g) ? new Date(a, m-1, g) : null; };
+  const hojeData = () => { const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+  const noites = (a,b) => (a && b) ? Math.round((b-a)/86400000) : null;
+  const esc = t => String(t==null?"":t).replace(/[&<>"']/g,
+    c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  function estadoContrato(hoje, inicio, fim){
+    const a = d(inicio), b = d(fim);
+    if (!a || !b) return "incompleto";
+    if (b <= hoje) return "passado";
+    if (a > hoje) return "futuro";
+    return "atual";
+  }
+
+  function seCruzam(a1, a2, b1, b2){
+    const x1 = d(a1), x2 = d(a2), y1 = d(b1), y2 = d(b2);
+    if (!x1 || !x2 || !y1 || !y2) return false;
+    return x1 < y2 && y1 < x2;   // saida nao conta como noite ocupada
+  }
+
+  function conflitos(lista){
+    const achados = [];
+    for (let i = 0; i < lista.length; i++){
+      for (let j = i + 1; j < lista.length; j++){
+        const a = lista[i], b = lista[j];
+        if (!a.quarto || !b.quarto) continue;
+        if ((a.casa||"") !== (b.casa||"") || a.quarto !== b.quarto) continue;
+        if (seCruzam(a.inicio, a.fim, b.inicio, b.fim)) achados.push([a, b]);
+      }
+    }
+    return achados;
+  }
+
+  function validar(inq, todos){
+    const queixas = [];
+    if (!(inq.nome||"").trim()) queixas.push("falta o nome");
+    if (!inq.quarto) queixas.push("falta o quarto — sem isso não se deteta sobreposição");
+    if (inq.inicio && inq.fim && d(inq.fim) <= d(inq.inicio))
+      queixas.push("a saída é anterior ou igual à entrada");
+    if ((inq.email||"") && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(inq.email))
+      queixas.push("o e-mail não parece válido");
+    if (inq.renda != null && inq.renda !== "" && Number(inq.renda) < 0)
+      queixas.push("a renda não pode ser negativa");
+    (todos||[]).forEach(outro => {
+      if (outro.id === inq.id) return;
+      if (!inq.quarto || outro.quarto !== inq.quarto) return;
+      if ((outro.casa||"") !== (inq.casa||"")) return;
+      if (seCruzam(inq.inicio, inq.fim, outro.inicio, outro.fim))
+        queixas.push("as datas cruzam-se com " + (outro.nome||"outra ficha") + " no mesmo quarto");
+    });
+    return queixas;
+  }
+
+  function blocosManuais(lista){
+    const porCasa = {};
+    lista.forEach(inq => {
+      const direto = !(inq.plataforma||"").trim() ||
+                     /^direto$/i.test((inq.plataforma||"").trim());
+      if (!direto || !inq.quarto || !inq.inicio || !inq.fim) return;
+      const casa = inq.casa || "casa";
+      porCasa[casa] = porCasa[casa] || {};
+      porCasa[casa][inq.quarto] = porCasa[casa][inq.quarto] || [];
+      porCasa[casa][inq.quarto].push({start: inq.inicio, end: inq.fim,
+        note: "Contrato direto"});
+    });
+    return porCasa;
+  }
+
+
+  // Calendario com nomes, para importar no Google. NAO e um link: e um ficheiro
+  // que sai do computador so se a pessoa o partilhar.   // AJUDA: calendário com nomes
+  function paraICS(lista){
+    const carimbo = new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
+    const semData = i => !i.inicio || !i.fim;
+    const linhas = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Registo de inquilinos//PT",
+      "CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Inquilinos"];
+    lista.filter(i => !semData(i)).forEach((inq, n) => {
+      const limpa = t => String(t||"").replace(/[\\;,]/g, m => "\\" + m).replace(/\n/g, "\\n");
+      linhas.push("BEGIN:VEVENT",
+        "UID:inq-" + n + "-" + (inq.id||n) + "@registo.local",
+        "DTSTAMP:" + carimbo,
+        "DTSTART;VALUE=DATE:" + inq.inicio.replace(/-/g,""),
+        "DTEND;VALUE=DATE:" + inq.fim.replace(/-/g,""),
+        "SUMMARY:" + limpa((inq.quarto||"sem quarto") + " · " + (inq.nome||"sem nome")),
+        "DESCRIPTION:" + limpa([
+          inq.plataforma ? "Plataforma: " + inq.plataforma : "Contrato direto",
+          inq.renda ? "Renda: " + inq.renda + " EUR" : "",
+          inq.telefone ? "Tel: " + inq.telefone : "",
+          inq.email || "", inq.notas || ""].filter(Boolean).join(" | ")),
+        "TRANSP:OPAQUE","STATUS:CONFIRMED","END:VEVENT");
+    });
+    linhas.push("END:VCALENDAR");
+    return linhas.join("\r\n") + "\r\n";
+  }
+
+  function paraCSV(lista){
+    const cabecalho = CAMPOS.map(c => c[1]);
+    const linhas = lista.map(inq => CAMPOS.map(c => {
+      const v = inq[c[0]];
+      const t = v == null ? "" : String(v);
+      return /[",;\n]/.test(t) ? '"' + t.replace(/"/g,'""') + '"' : t;
+    }));
+    return [cabecalho, ...linhas].map(l => l.join(";")).join("\r\n");
+  }
+
+  // ------------------------------------------------------------------- estado
+  let dados = {versao_formato: 1, atualizado_em: "", inquilinos: []};
+  let handle = null;          // ficheiro aberto, quando o browser permite
+  let porGravar = false;
+  let filtro = "todos";
+  let procura = "";
+  let ordem = {campo: "inicio", ascendente: false};
+  let emEdicao = null;
+
+  const podeGravarDireto = typeof window.showOpenFilePicker === "function";
+
+  function marcarEstado(texto, alerta){
+    const el = $("estado-ficheiro");
+    el.textContent = texto;
+    el.className = "estado-ficheiro" + (alerta ? " porgravar" : "");
+  }
+
+  async function abrirFicheiro(){                              // AJUDA: abrir e guardar
+    if (podeGravarDireto){
+      try {
+        const [h] = await window.showOpenFilePicker({
+          types: [{description: "Registo de inquilinos", accept: {"application/json": [".json"]}}]
+        });
+        handle = h;
+        const ficheiro = await h.getFile();
+        carregar(await ficheiro.text(), h.name);
+      } catch (e) { if (e.name !== "AbortError") alert("Não deu para abrir: " + e.message); }
+      return;
+    }
+    const entrada = document.createElement("input");
+    entrada.type = "file";
+    entrada.accept = ".json,application/json";
+    entrada.addEventListener("change", async () => {
+      const ficheiro = entrada.files[0];
+      if (ficheiro) carregar(await ficheiro.text(), ficheiro.name);
+    });
+    entrada.click();
+  }
+
+  function carregar(texto, nome){
+    let lido;
+    try { lido = JSON.parse(texto); }
+    catch { alert("Este ficheiro não é um registo válido."); return; }
+    const lista = Array.isArray(lido) ? lido : lido.inquilinos;
+    if (!Array.isArray(lista)){ alert("Não encontrei a lista de inquilinos no ficheiro."); return; }
+    dados = {versao_formato: lido.versao_formato || 1,
+             atualizado_em: lido.atualizado_em || "", inquilinos: lista};
+    dados.inquilinos.forEach((inq, i) => { if (!inq.id) inq.id = "inq-" + (i+1); });
+    porGravar = false;
+    marcarEstado(nome + " · " + lista.length + " fichas", false);
+    desenhar();
+  }
+
+  async function guardar(silencioso){
+    dados.atualizado_em = new Date().toISOString().slice(0,19) + "Z";
+    const texto = JSON.stringify(dados, null, 2);
+    if (handle){
+      try {
+        const fluxo = await handle.createWritable();
+        await fluxo.write(texto);
+        await fluxo.close();
+        porGravar = false;
+        marcarEstado(handle.name + " · guardado " + new Date().toLocaleTimeString("pt-PT",
+          {hour:"2-digit", minute:"2-digit"}), false);
+        return true;
+      } catch (e) { marcarEstado("falhou gravar: " + e.message, true); return false; }
+    }
+    if (silencioso){   // sem gravacao direta, o aviso fica aceso ate ela descarregar
+      porGravar = true;
+      marcarEstado("por gravar — carrega em Guardar", true);
+      return false;
+    }
+    const url = URL.createObjectURL(new Blob([texto], {type: "application/json"}));
+    const a = document.createElement("a");
+    a.href = url; a.download = "inquilinos.json"; a.click();
+    URL.revokeObjectURL(url);
+    porGravar = false;
+    marcarEstado("descarregado — grava por cima do ficheiro antigo", false);
+    return true;
+  }
+
+  function alterou(){ desenhar(); guardar(true); }
+
+  // ------------------------------------------------------------------ tabela
+  function visiveis(){
+    const hoje = hojeData();
+    const termo = procura.trim().toLowerCase();
+    let lista = dados.inquilinos.filter(inq => {
+      const estado = estadoContrato(hoje, inq.inicio, inq.fim);
+      if (filtro !== "todos" && estado !== filtro) return false;
+      if (!termo) return true;
+      return CAMPOS.some(c => String(inq[c[0]]||"").toLowerCase().includes(termo));
+    });
+    const campo = ordem.campo;
+    lista.sort((a,b) => {
+      const x = a[campo] == null ? "" : a[campo], y = b[campo] == null ? "" : b[campo];
+      const r = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "pt");
+      return ordem.ascendente ? r : -r;
+    });
+    return lista;
+  }
+
+  function desenhar(){
+    const hoje = hojeData();
+    const lista = visiveis();
+    const alvo = $("tabela");
+
+    if (!dados.inquilinos.length){
+      alvo.innerHTML = '<div class="vazio-tabela"><b>Ainda não há ficheiro aberto</b>' +
+        'Carrega em <b>Abrir ficheiro</b> e escolhe o teu <code>inquilinos.json</code>, ' +
+        'ou em <b>Novo inquilino</b> para começar do zero.</div>';
+    } else if (!lista.length){
+      alvo.innerHTML = '<div class="vazio-tabela"><b>Nada corresponde à procura</b>' +
+        'Limpa a caixa de procura ou muda o filtro.</div>';
+    } else {
+      const colunas = [["nome","Nome"],["quarto","Quarto"],["inicio","Entrada"],
+        ["fim","Saída"],["noites","Noites"],["renda","Renda"],["plataforma","Plataforma"],
+        ["estado","Estado"]];
+      alvo.innerHTML = "<table><thead><tr>" + colunas.map(([c,t]) =>
+        '<th data-ordenar="' + c + '"' + (c === "plataforma" ? ' class="esconde-movel"' : '') +
+        '>' + t + (ordem.campo === c ? (ordem.ascendente ? " ↑" : " ↓") : "") + "</th>").join("") +
+        "</tr></thead><tbody>" + lista.map(inq => {
+          const estado = estadoContrato(hoje, inq.inicio, inq.fim);
+          const n = noites(d(inq.inicio), d(inq.fim));
+          return '<tr class="linha" data-id="' + esc(inq.id) + '">' +
+            '<td><div class="nome">' + esc(inq.nome || "sem nome") + "</div>" +
+              (inq.email ? '<div class="sub">' + esc(inq.email) + "</div>" : "") + "</td>" +
+            "<td>" + esc(inq.quarto || "—") + "</td>" +
+            '<td class="num">' + esc(inq.inicio || "—") + "</td>" +
+            '<td class="num">' + esc(inq.fim || "—") + "</td>" +
+            '<td class="num">' + (n == null ? "—" : n) + "</td>" +
+            '<td class="num">' + (inq.renda == null || inq.renda === "" ? "—" :
+              Number(inq.renda).toFixed(0) + " €") + "</td>" +
+            '<td class="esconde-movel">' + esc(inq.plataforma || "direto") + "</td>" +
+            '<td><span class="etq ' + estado + '">' + estado + "</span></td></tr>";
+        }).join("") + "</tbody></table>";
+
+      alvo.querySelectorAll("th[data-ordenar]").forEach(th =>
+        th.addEventListener("click", () => {
+          const campo = th.dataset.ordenar;
+          ordem = {campo, ascendente: ordem.campo === campo ? !ordem.ascendente : true};
+          desenhar();
+        }));
+      alvo.querySelectorAll("tr.linha").forEach(tr =>
+        tr.addEventListener("click", () => abrirFicha(
+          dados.inquilinos.find(i => i.id === tr.dataset.id))));
+    }
+
+    // sobreposicoes e fichas incompletas               // AJUDA: sobreposições
+    const cruzados = conflitos(dados.inquilinos);
+    const semQuarto = dados.inquilinos.filter(i => !i.quarto && (i.inicio || i.fim));
+    const faixa = $("aviso-conflitos");
+    if (cruzados.length || semQuarto.length){
+      faixa.hidden = false;
+      faixa.innerHTML = "<b>Há fichas que precisam de atenção</b><ul>" +
+        cruzados.map(([a,b]) => "<li>" + esc(a.nome) + " e " + esc(b.nome) +
+          " cruzam-se no " + esc(a.quarto) + "</li>").join("") +
+        semQuarto.map(i => "<li>" + esc(i.nome) +
+          " não tem quarto atribuído — não entra na deteção de sobreposições</li>").join("") +
+        "</ul>";
+    } else faixa.hidden = true;
+  }
+
+  // ------------------------------------------------------------------- ficha
+  function abrirFicha(inq){
+    emEdicao = inq ? JSON.parse(JSON.stringify(inq)) : {
+      id: "inq-" + Date.now().toString(36), casa: sugerirCasa(), nome: "", quarto: ""};
+    $("ficha-titulo").textContent = inq ? (inq.nome || "Inquilino") : "Novo inquilino";
+    $("ficha-apagar").style.display = inq ? "" : "none";
+
+    $("ficha-campos").innerHTML = CAMPOS.map(([chave, etiqueta, tipo, obrig]) => {
+      const valor = emEdicao[chave] == null ? "" : String(emEdicao[chave]);
+      const largo = tipo === "textarea" || chave === "morada" || chave === "nome";
+      const entrada = tipo === "textarea"
+        ? '<textarea rows="2" data-campo="' + chave + '">' + esc(valor) + "</textarea>"
+        : '<input type="' + tipo + '" data-campo="' + chave + '" value="' + esc(valor) + '"' +
+          (tipo === "number" ? ' step="0.01" min="0"' : "") + ">";
+      return '<div class="campo' + (largo ? " largo" : "") + '"><label>' + etiqueta +
+        (obrig ? " *" : "") + "</label>" + entrada + "</div>";
+    }).join("");
+
+    $("ficha-campos").querySelectorAll("[data-campo]").forEach(campo =>
+      campo.addEventListener("input", () => {
+        const chave = campo.dataset.campo;
+        emEdicao[chave] = campo.type === "number"
+          ? (campo.value === "" ? null : Number(campo.value)) : campo.value;
+        mostrarQueixas();
+      }));
+    mostrarQueixas();
+    $("dlg-ficha").showModal();
+  }
+
+  function sugerirCasa(){
+    const casas = dados.inquilinos.map(i => i.casa).filter(Boolean);
+    return casas.length ? casas[0] : "casa-trindade";
+  }
+
+  function mostrarQueixas(){
+    const queixas = validar(emEdicao, dados.inquilinos);
+    const caixa = $("ficha-queixas");
+    caixa.hidden = !queixas.length;
+    if (queixas.length)
+      caixa.innerHTML = "<b>A rever antes de guardar</b><ul>" +
+        queixas.map(q => "<li>" + esc(q) + "</li>").join("") + "</ul>";
+    const n = noites(d(emEdicao.inicio), d(emEdicao.fim));
+    $("ficha-derivados").textContent = n == null ? "" :
+      n + " noites · " + (emEdicao.renda ? (n/30.44*Number(emEdicao.renda)).toFixed(0) + " € previstos" : "");
+  }
+
+  // ------------------------------------------------------------------ dialogos
+  function mostrarTexto(titulo, texto, nota){
+    $("texto-titulo").textContent = titulo;
+    $("texto-corpo").innerHTML = (nota ? "<p>" + nota + "</p>" : "") +
+      '<pre style="white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Menlo,monospace;' +
+      'font-size:11.5px;background:var(--paper);padding:12px;border-radius:8px">' +
+      esc(texto) + "</pre>";
+    $("texto-copiar").onclick = async () => {
+      try { await navigator.clipboard.writeText(texto); $("texto-copiar").textContent = "Copiado"; }
+      catch { $("texto-copiar").textContent = "Copia à mão"; }
+      setTimeout(() => { $("texto-copiar").textContent = "Copiar"; }, 2000);
+    };
+    $("dlg-texto").showModal();
+  }
+
+  // ---------------------------------------------------------------- autotestes
+  // Cada teste protege uma conta que, errada, faz arrendar o mesmo quarto duas
+  // vezes ou perder dados. So memoria. NAO REMOVER.
+  const TESTES = [
+    ["a saída não conta como noite ocupada (v1.0)", () => {
+      if (seCruzam("2026-07-01","2026-08-08","2026-08-08","2026-09-01"))
+        return "saída e entrada no mesmo dia foram tratadas como sobreposição";
+      if (!seCruzam("2026-07-01","2026-08-09","2026-08-08","2026-09-01"))
+        return "uma sobreposição real de um dia passou despercebida";
+    }],
+    ["sobreposição só conta dentro do mesmo quarto (v1.0)", () => {
+      const lista = [
+        {id:"a", nome:"A", casa:"c", quarto:"quarto-1", inicio:"2026-01-01", fim:"2026-06-01"},
+        {id:"b", nome:"B", casa:"c", quarto:"quarto-2", inicio:"2026-01-01", fim:"2026-06-01"},
+        {id:"c", nome:"C", casa:"c", quarto:"quarto-1", inicio:"2026-05-01", fim:"2026-08-01"}];
+      const achados = conflitos(lista);
+      if (achados.length !== 1) return "encontrou " + achados.length + " conflitos em vez de 1";
+      if (achados[0][0].id !== "a" || achados[0][1].id !== "c") return "apontou as fichas erradas";
+    }],
+    ["ficha sem quarto não inventa conflitos (v1.0)", () => {
+      const lista = [
+        {id:"a", nome:"A", quarto:"", inicio:"2026-01-01", fim:"2026-06-01"},
+        {id:"b", nome:"B", quarto:"", inicio:"2026-01-01", fim:"2026-06-01"}];
+      if (conflitos(lista).length) return "duas fichas sem quarto foram dadas como sobrepostas";
+    }],
+    ["estado do contrato (v1.0)", () => {
+      const hoje = d("2026-07-20");
+      if (estadoContrato(hoje, "2026-01-01", "2026-07-20") !== "passado")
+        return "um contrato que acaba hoje não conta como passado";
+      if (estadoContrato(hoje, "2026-07-01", "2026-08-01") !== "atual") return "atual mal classificado";
+      if (estadoContrato(hoje, "2026-09-01", "2027-01-01") !== "futuro") return "futuro mal classificado";
+      if (estadoContrato(hoje, "", "") !== "incompleto") return "ficha sem datas mal classificada";
+    }],
+    ["contar noites atravessa a mudança da hora (v1.0)", () => {
+      const n = noites(d("2026-10-24"), d("2026-10-26"));
+      if (n !== 2) return "deu " + n + " em vez de 2";
+    }],
+    ["bloqueios só para contratos diretos (v1.0)", () => {
+      const blocos = blocosManuais([
+        {nome:"A", casa:"c", quarto:"quarto-1", inicio:"2026-01-01", fim:"2026-02-01", plataforma:"Spotahome"},
+        {nome:"B", casa:"c", quarto:"quarto-2", inicio:"2026-01-01", fim:"2026-02-01", plataforma:""},
+        {nome:"C", casa:"c", quarto:"quarto-2", inicio:"2026-03-01", fim:"2026-04-01", plataforma:"Direto"}]);
+      if (blocos.c && blocos.c["quarto-1"]) return "gerou bloqueio para uma reserva de plataforma";
+      if (!blocos.c || (blocos.c["quarto-2"]||[]).length !== 2)
+        return "não gerou os bloqueios dos contratos diretos";
+    }],
+    ["o CSV protege pontos e vírgulas dentro do texto (v1.0)", () => {
+      const linha = paraCSV([{nome:'Silva; Costa', quarto:"q1"}]).split("\r\n")[1];
+      if (!linha.startsWith('"Silva; Costa"')) return "um ponto e vírgula no nome partia a coluna";
+    }],
+    ["validação apanha datas invertidas (v1.0)", () => {
+      const queixas = validar({id:"x", nome:"A", quarto:"q1", inicio:"2026-05-01", fim:"2026-04-01"}, []);
+      if (!queixas.some(q => q.includes("saída"))) return "aceitou uma saída anterior à entrada";
+    }],
+    ["o calendário exportado tem nomes e escapa caracteres (v1.1)", () => {
+      const ics = paraICS([{id:"a", nome:"Silva; Costa", quarto:"quarto-1",
+        inicio:"2026-09-01", fim:"2026-09-10", plataforma:"Flatio"}]);
+      if (!ics.includes("SUMMARY:quarto-1 · Silva\\; Costa"))
+        return "o ponto e vírgula no nome partia o ficheiro";
+      if (!ics.includes("DTSTART;VALUE=DATE:20260901")) return "data mal escrita";
+      const semDatas = paraICS([{id:"b", nome:"Sem datas", quarto:"q1"}]);
+      if (semDatas.includes("BEGIN:VEVENT")) return "uma ficha sem datas gerou evento";
+    }],
+    ["a ajuda cobre gravar e sobreposições (v1.0)", () => {
+      const titulos = AJUDA.map(a => a[0]);
+      const falta = ["abrir e guardar", "sobreposições", "o ficheiro"].filter(t => !titulos.includes(t));
+      if (falta.length) return "a ajuda perdeu: " + falta.join(", ");
+    }]
+  ];
+
+  function correrTestes(){
+    const falhas = [];
+    TESTES.forEach(([nome, verificacao]) => {
+      let queixa;
+      try { queixa = verificacao(); } catch (e) { queixa = "rebentou: " + e.message; }
+      if (queixa) falhas.push(nome + " → " + queixa);
+    });
+    if (falhas.length){
+      const caixa = $("aviso-testes");
+      caixa.hidden = false;
+      caixa.innerHTML = "<b>Esta página tem um problema — não confies nos avisos dela</b>" +
+        "Falharam " + falhas.length + " verificações internas, incluindo possivelmente a " +
+        "deteção de sobreposições.<ul>" + falhas.map(f => "<li>" + esc(f) + "</li>").join("") + "</ul>";
+    }
+    return falhas;
+  }
+
+  // ---------------------------------------------------------------- arranque
+  $("versao").textContent = "v" + PAGINA_VERSAO;
+  $("btn-abrir").addEventListener("click", abrirFicheiro);
+  $("btn-guardar").addEventListener("click", () => guardar(false));
+  $("btn-novo").addEventListener("click", () => abrirFicha(null));
+  $("btn-exportar").addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob(["\ufeff" + paraCSV(dados.inquilinos)],
+      {type: "text/csv;charset=utf-8"}));
+    const a = document.createElement("a");
+    a.href = url; a.download = "inquilinos.csv"; a.click();
+    URL.revokeObjectURL(url);
+  });
+  $("btn-agenda").addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([paraICS(dados.inquilinos)],
+      {type: "text/calendar;charset=utf-8"}));
+    const a = document.createElement("a");
+    a.href = url; a.download = "inquilinos.ics"; a.click();
+    URL.revokeObjectURL(url);
+  });
+  $("btn-bloqueios").addEventListener("click", () => {      // AJUDA: contratos diretos
+    const blocos = blocosManuais(dados.inquilinos);
+    const nada = !Object.keys(blocos).length;
+    mostrarTexto("Bloqueios para o calendário",
+      nada ? "(nenhum contrato direto com datas preenchidas)" : JSON.stringify(blocos, null, 2),
+      nada ? "Nenhuma ficha está marcada como contrato direto com entrada e saída preenchidas."
+           : "Cola cada lista em <code>manual_blocks</code> do quarto certo, no " +
+             "<code>calendars.json</code>. São os contratos que nenhuma plataforma conhece.");
+  });
+  $("btn-ajuda").addEventListener("click", () => {
+    $("ajuda-versao").textContent = "v" + PAGINA_VERSAO;
+    $("ajuda-corpo").innerHTML = AJUDA.map(([t,c]) => "<h3>" + t + "</h3>" + c).join("") +
+      "<h3>alterações</h3><p>" + HISTORICO.map(esc).join("<br>") + "</p>";
+    $("dlg-ajuda").showModal();
+  });
+  $("ficha-guardar").addEventListener("click", () => {
+    const indice = dados.inquilinos.findIndex(i => i.id === emEdicao.id);
+    if (indice >= 0) dados.inquilinos[indice] = emEdicao;
+    else dados.inquilinos.push(emEdicao);
+    $("dlg-ficha").close();
+    alterou();
+  });
+  $("ficha-apagar").addEventListener("click", () => {
+    if (!confirm("Apagar a ficha de " + (emEdicao.nome || "este inquilino") + "?")) return;
+    dados.inquilinos = dados.inquilinos.filter(i => i.id !== emEdicao.id);
+    $("dlg-ficha").close();
+    alterou();
+  });
+  $("procura").addEventListener("input", evento => { procura = evento.target.value; desenhar(); });
+  document.querySelectorAll(".filtro button").forEach(botao =>
+    botao.addEventListener("click", () => {
+      filtro = botao.dataset.filtro;
+      document.querySelectorAll(".filtro button").forEach(b =>
+        b.setAttribute("aria-pressed", String(b === botao)));
+      desenhar();
+    }));
+  document.querySelectorAll("dialog .fechar").forEach(botao =>
+    botao.addEventListener("click", () => botao.closest("dialog").close()));
+  window.addEventListener("beforeunload", evento => {
+    if (porGravar){ evento.preventDefault(); evento.returnValue = ""; }
+  });
+
+  correrTestes();
+  desenhar();
+  if (!podeGravarDireto)
+    marcarEstado("este browser não grava direto — usa o botão Guardar", true);
+})();
+</script>
+</body>
+</html>

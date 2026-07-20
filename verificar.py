@@ -26,6 +26,7 @@ import sys
 
 MOTOR = "merge_calendars.py"
 PAINEL = "index.html"
+INQUILINOS = "inquilinos.html"
 CONFIG = "calendars.json"
 
 problemas: list[str] = []
@@ -191,6 +192,10 @@ def verificar_painel(texto_completo: str, versao_motor: str | None) -> None:
 # --------------------------------------------------------------------------- #
 # Configuracao
 # --------------------------------------------------------------------------- #
+def etiqueta_feed(casa: str, quarto: str, plataforma: str) -> str:
+    return f"{casa} / {quarto} (para {plataforma})"
+
+
 def verificar_config(texto: str) -> None:
     try:
         dados = json.loads(texto)
@@ -225,6 +230,15 @@ def verificar_config(texto: str) -> None:
             if not id_quarto:
                 problema(f"{CONFIG}: o quarto '{etiqueta}' nao tem id")
             caminho = f"{id_casa}/{id_quarto}.ics"
+            caminhos[f"{id_casa}/{id_quarto}--detalhe.ics"] = etiqueta + " (agenda)"
+            caminhos[f"{id_casa}/agenda.ics"] = casa.get("name", id_casa) + " (agenda)"
+            # cada plataforma tem o seu ficheiro, sem as reservas dela propria
+            for fonte in quarto.get("sources", []):
+                plataforma = re.sub(r"[^a-z0-9]+", "-",
+                                    (fonte.get("platform") or "").lower()).strip("-")
+                if plataforma:
+                    caminhos[f"{id_casa}/{id_quarto}--para-{plataforma}.ics"] = etiqueta_feed(
+                        casa.get("name", id_casa), quarto.get("name", id_quarto), plataforma)
             if caminho in caminhos:
                 problema(
                     f"{CONFIG}: '{etiqueta}' e '{caminhos[caminho]}' escrevem os dois em "
@@ -260,11 +274,40 @@ def verificar_config(texto: str) -> None:
                 except Exception:  # noqa: BLE001
                     problema(f"{CONFIG}: '{etiqueta}' — bloqueio manual com datas invalidas: {bloco}")
                     continue
+                from datetime import date as _date
+                if fim <= _date.today():
+                    dias = (_date.today() - fim).days
+                    aviso(
+                        f"{CONFIG}: '{quarto.get('name','')}' — o bloqueio manual "
+                        f"'{bloco.get('note','sem nota')}' terminou ha {dias} dia(s) e "
+                        "ja nao bloqueia nada; podes retira-lo"
+                    )
                 if fim <= inicio:
                     problema(
                         f"{CONFIG}: '{etiqueta}' — bloqueio manual de {inicio} a {fim} "
                         "termina antes de comecar, nao bloqueia nada"
                     )
+
+    # fotos: caminho indicado a mao que nao existe, e fotos que nao correspondem
+    # a nenhum quarto (id renomeado -> a foto deixa de aparecer sem dizer nada)
+    esperadas = set()
+    for casa in casas:
+        for quarto in casa.get("rooms", []):
+            base = f"fotos/{casa.get('id','')}/{quarto.get('id','')}"
+            esperadas.update(base + "." + ext for ext in ("jpg", "jpeg", "png", "webp"))
+            escolha = quarto.get("photo")
+            if escolha and not os.path.exists(escolha):
+                problema(
+                    f"{CONFIG}: '{quarto.get('name', '')}' apontado para a foto "
+                    f"'{escolha}', que nao existe no repositorio"
+                )
+    if os.path.isdir("fotos"):
+        for raiz, _dirs, ficheiros in os.walk("fotos"):
+            for ficheiro in ficheiros:
+                caminho = os.path.join(raiz, ficheiro).replace(os.sep, "/")
+                if caminho.lower().endswith((".jpg", ".jpeg", ".png", ".webp")) \
+                        and caminho not in esperadas:
+                    aviso(f"{caminho} nao corresponde a nenhum quarto — nao vai aparecer no painel")
 
     # .ics gerados que ja nao correspondem a nenhum quarto: link morto nas plataformas
     if os.path.isdir("output"):
@@ -326,12 +369,99 @@ def verificar_cores_em_uso(texto_config: str) -> None:
                 )
 
 
+# --------------------------------------------------------------------------- #
+# Registo de inquilinos
+#
+# Esta pagina le dados pessoais de um ficheiro local. A regra e absoluta: nao
+# faz um unico pedido de rede. Um <img>, um tipo de letra externo ou um fetch
+# esquecido chegam para exportar dados que nao ha maneira de recuperar. E por
+# isso que isto e verificado no texto do ficheiro, e nao so na revisao humana.
+# --------------------------------------------------------------------------- #
+def verificar_inquilinos(texto_completo: str) -> None:
+    texto = re.sub(r"<!--.*?-->", "", texto_completo, flags=re.DOTALL)
+
+    proibidos = [
+        (r"\bfetch\s*\(", "fetch()"),
+        (r"XMLHttpRequest", "XMLHttpRequest"),
+        (r"sendBeacon", "navigator.sendBeacon"),
+        (r"WebSocket", "WebSocket"),
+        (r"EventSource", "EventSource"),
+        (r"navigator\.geolocation", "geolocalizacao"),
+    ]
+    for padrao, nome in proibidos:
+        if re.search(padrao, texto):
+            problema(
+                f"{INQUILINOS}: usa {nome} — esta pagina tem dados pessoais e nao "
+                "pode fazer pedidos de rede"
+            )
+
+    for atributo in re.findall(r'(?:src|href)\s*=\s*"([^"]+)"', texto):
+        if atributo.startswith(("http://", "https://", "//")):
+            problema(
+                f"{INQUILINOS}: carrega '{atributo}' de fora — cada recurso externo "
+                "revela a quem o serve que esta pagina foi aberta"
+            )
+    if "@import" in texto:
+        problema(f"{INQUILINOS}: @import carrega estilos de fora")
+
+    if "localStorage" in texto or "sessionStorage" in texto:
+        problema(
+            f"{INQUILINOS}: armazenamento no browser — deixaria copias dos dados "
+            "pessoais na maquina, fora do ficheiro que a pessoa escolheu"
+        )
+
+    if not re.search(r'const PAGINA_VERSAO = "[\d.]+"', texto):
+        problema(f"{INQUILINOS}: PAGINA_VERSAO desapareceu")
+    if "const TESTES = [" not in texto:
+        problema(f"{INQUILINOS}: a lista de autotestes desapareceu")
+    if "const AJUDA = [" not in texto:
+        problema(f"{INQUILINOS}: o texto de ajuda desapareceu")
+    else:
+        inicio = texto.index("const AJUDA = [")
+        fim = texto.index("];", inicio)
+        seccoes = set(re.findall(r'^\s*\["([^"]+)",', texto[inicio:fim], re.M))
+        for marcada in set(re.findall(r"//\s*AJUDA:\s*([^\n\r]+?)\s*$", texto, re.M)):
+            if marcada not in seccoes:
+                problema(
+                    f"{INQUILINOS}: o codigo esta marcado com 'AJUDA: {marcada}' mas a "
+                    "ajuda nao tem essa seccao"
+                )
+
+    for etiqueta in ("script", "style", "dialog", "table"):
+        if texto.count(f"<{etiqueta}") != texto.count(f"</{etiqueta}>"):
+            problema(f"{INQUILINOS}: <{etiqueta}> aberto e fechado em numero diferente")
+
+
+def verificar_dados_pessoais_fora() -> None:
+    """Um ficheiro de inquilinos dentro do repositorio e uma fuga irreversivel."""
+    suspeitos = []
+    for raiz, dirs, ficheiros in os.walk("."):
+        dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "cache", "output"}]
+        for ficheiro in ficheiros:
+            nome = ficheiro.lower()
+            if nome.endswith((".xlsx", ".xls")) or (
+                "inquilino" in nome or "tenant" in nome
+            ) and nome.endswith((".json", ".csv")):
+                suspeitos.append(os.path.join(raiz, ficheiro).replace(os.sep, "/").lstrip("./"))
+    for caminho in suspeitos:
+        problema(
+            f"{caminho} parece conter dados de inquilinos e esta dentro do repositorio. "
+            "O repositorio e publico e o historico do Git guarda o que la entra: "
+            "retira o ficheiro antes de fazer commit"
+        )
+
+
 def main() -> int:
     texto_motor = ler(MOTOR)
     versao = verificar_motor(texto_motor) if texto_motor else None
     texto_painel = ler(PAINEL)
     if texto_painel:
         verificar_painel(texto_painel, versao)
+    if os.path.exists(INQUILINOS):
+        with open(INQUILINOS, encoding="utf-8") as handle:
+            verificar_inquilinos(handle.read())
+    verificar_dados_pessoais_fora()
+
     texto_config = ler(CONFIG)
     if texto_config:
         verificar_config(texto_config)

@@ -1,4 +1,4 @@
-# Sincronizador de calendários (v3.2)
+# Sincronizador de calendários (v3.8)
 
 Junta os links iCal de várias plataformas (Spotahome, Flatio, Uniplaces,
 HousingAnywhere…) num único `.ics` por quarto, com link público estável,
@@ -10,10 +10,15 @@ Suporta **várias casas, cada uma com vários quartos**.
 ```
 merge_calendars.py                    motor de sincronização (sem dependências)
 verificar.py                          verificador estático, corre num comando
+inquilinos.html                       registo de inquilinos (dados ficam no teu PC)
+fotos/<casa>/<quarto>.jpg             foto opcional de cada quarto
 calendars.json                        casas, quartos e links das plataformas
 index.html                            painel de disponibilidade
 .github/workflows/sync-calendars.yml  agendamento automático
-output/<casa>/<quarto>.ics            gerado — é isto que colas nas plataformas
+output/<casa>/<quarto>.ics            gerado — para uma plataforma nova (leva tudo)
+output/<casa>/<quarto>--para-<x>.ics  gerado — para a plataforma X, sem as reservas dela
+output/<casa>/<quarto>--detalhe.ics   gerado — agenda do quarto, com plataforma no título
+output/<casa>/agenda.ics              gerado — agenda da casa toda, para o Google
 output/dashboard.js                   gerado — dados que o painel lê
 status.json                           gerado — estado da última sincronização
 cache/                                gerado — rede de segurança, não apagar
@@ -32,7 +37,13 @@ cache/                                gerado — rede de segurança, não apagar
    - painel: `https://<utilizador>.github.io/<repo>/`
    - calendário de um quarto: `https://<utilizador>.github.io/<repo>/output/casa-trindade/quarto-2.ics`
 
-É o segundo link que colas em qualquer plataforma que aceite importar calendário.
+**Cada plataforma recebe o seu link, não o geral.** O ficheiro `--para-spotahome.ics`
+leva tudo menos as reservas da Spotahome. Importar para uma plataforma as reservas
+que ela própria já tem faz com que ela bloqueie por cima delas; algumas tratam a
+sobreposição como erro e ignoram a importação inteira. O link geral é só para
+plataformas que ainda não são origem.
+
+O painel mostra, em cada quarto, a lista de links já com o destino certo.
 
 
 ## Antes de alterar seja o que for
@@ -144,3 +155,22 @@ Python 3.9+, sem instalar nada.
   Smoobu tem exatamente a mesma limitação, porque o protocolo é o mesmo.
 - Reservas com menos de um dia de intervalo entre si aparecem fundidas num só
   bloco. Para efeitos de disponibilidade é equivalente.
+
+## Registo de inquilinos
+
+O `inquilinos.html` substitui a folha de Excel: fichas, contactos, contratos,
+deteção de sobreposições no mesmo quarto e geração dos `manual_blocks` para os
+contratos diretos.
+
+**Os dados nunca entram no repositório.** O ficheiro `inquilinos.json` fica no
+teu computador — de preferência numa pasta do OneDrive, para teres cópia de
+segurança e histórico. A página lê-o e grava-o localmente; não faz um único
+pedido de rede, e o `verificar.py` recusa qualquer alteração que introduza um.
+
+No Chrome e no Edge a gravação é direta no ficheiro que abriste. Noutros
+browsers fica um aviso vermelho "por gravar" até descarregares e substituíres o
+ficheiro à mão.
+
+Se um dia aparecer um `inquilinos.json`, um `.csv` ou um `.xlsx` com dados de
+inquilinos dentro da pasta do repositório, o verificador falha e diz porquê. O
+histórico do Git não esquece o que lá entra.

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   PAINEL DE DISPONIBILIDADE — Calendar Sync
-  Versao 3.4
+  Versao 3.10
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -141,6 +141,10 @@ section.casa{margin-top:40px}
 .amostra{width:12px;height:12px;border-radius:3px;display:inline-block}
 
 /* ---------- cartões ---------- */
+.cartao-topo{display:flex;gap:11px;align-items:flex-start;margin-bottom:2px}
+.foto{width:64px;height:48px;border-radius:7px;object-fit:cover;flex:none;
+  background:var(--paper);border:1px solid var(--linha)}
+.cartao-topo .titulo{min-width:0}
 .cartoes{display:grid;grid-template-columns:repeat(auto-fill,minmax(266px,1fr));gap:12px;margin-top:12px}
 .cartao{background:var(--surface);border:1px solid var(--linha);border-radius:var(--raio);padding:14px 16px}
 .cartao h3{font-size:14.5px;margin:0 0 2px;font-weight:600}
@@ -156,6 +160,17 @@ section.casa{margin-top:40px}
 }
 .fonte.CACHE{border-color:var(--ocre);color:var(--ocre)}
 .fonte.ERRO{border-color:var(--tijolo);color:var(--tijolo);font-weight:500}
+.links{margin-top:11px;border-top:1px solid var(--linha);padding-top:9px}
+.links .cab{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--texto-suave);margin-bottom:6px}
+.link-linha{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:12.5px}
+.link-linha .ponto{width:7px;height:7px;border-radius:50%;flex:none}
+.link-linha span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-linha button{font-family:"IBM Plex Mono",monospace;font-size:10.5px;padding:3px 9px;
+  border:1px solid var(--linha);background:transparent;color:var(--ink);border-radius:999px;
+  cursor:pointer;flex:none}
+.link-linha button:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.link-linha button:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 .copiar{
   margin-top:12px;width:100%;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
   padding:8px;border:1px solid var(--ink);background:transparent;color:var(--ink);
@@ -171,6 +186,7 @@ section.casa{margin-top:40px}
   color:var(--ink);cursor:pointer}
 .acao:hover{border-color:var(--ink)}
 .acao:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+a.acao{display:inline-block;line-height:1.35}
 dialog{border:0;border-radius:14px;padding:0;max-width:640px;width:calc(100% - 32px);
   background:var(--surface);color:var(--ink);box-shadow:0 18px 50px rgba(15,32,54,.22)}
 dialog::backdrop{background:rgba(15,32,54,.4)}
@@ -205,6 +221,11 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 .ed-remover:hover{color:var(--tijolo)}
 .ed-aviso{font-size:11.5px;margin:2px 0 8px 15px;color:var(--ocre)}
 .ed-aviso.erro{color:var(--tijolo)}
+.ed-colar{margin-top:8px;padding-top:10px;border-top:1px dashed var(--linha)}
+.ed-colar label{display:block;font-size:11.5px;color:var(--texto-suave);margin-bottom:5px}
+.ed-foto{font-size:11.5px;color:var(--texto-suave);margin-top:8px}
+.ed-foto code{font-family:"IBM Plex Mono",monospace;font-size:10.5px;background:var(--paper);
+  padding:1px 5px;border-radius:4px}
 .ed-rodape{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--linha);
   padding:12px 0 0;margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .ed-nota{font-size:12.5px;color:var(--texto-suave);margin:0 0 12px}
@@ -243,6 +264,7 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
     <span class="eyebrow" id="carimbo">a carregar…</span>
     <span id="estado-geral"></span>
     <span class="spacer"></span>
+    <a class="acao" href="inquilinos.html" style="text-decoration:none">Inquilinos</a>
     <button class="acao" id="btn-ligacoes">Ligações</button>
     <button class="acao" id="btn-ajuda">Ajuda</button>
     <div class="zoom" role="group" aria-label="Horizonte da fita">
@@ -272,7 +294,7 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 <script src="output/dashboard.js" onerror="window.SYNC_ERRO=true"></script>
 <script>
 (function(){
-  const PAINEL_VERSAO = "3.4";
+  const PAINEL_VERSAO = "3.10";
 
   // PLATAFORMAS — cor e endereco de cada plataforma. As cores foram tiradas dos
   // proprios logos, exceto onde esta dito. Corrige aqui e em mais lado nenhum.
@@ -352,10 +374,19 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
       <p>Tem de ser o endereço de <b>exportação</b> (acaba tipicamente em
       <code>.ics</code>), não o endereço da página do calendário no site — esse
       exige sessão iniciada e devolve a página, não as datas.</p>`],
-    ["dar o teu calendário às plataformas", `<p>Em cada quarto, botão
-      <b>Copiar link do calendário</b>, e colas esse endereço na plataforma nova.</p>
-      <p><b>Não o coles nas plataformas que já são origem deste calendário.</b>
-      Elas já cá estão; importá-lo de volta cria um ciclo.</p>`],
+    ["dar o teu calendário às plataformas", `<p>Cada quarto tem <b>um link por
+      plataforma</b>, e não um só. O link "Para a Spotahome" leva tudo <i>menos</i>
+      as reservas da Spotahome.</p>
+      <p>Porquê: se importares para a Spotahome um calendário que já inclui as
+      reservas dela, ela cria um bloqueio externo por cima das reservas que já tem.
+      Fica ilegível, e há plataformas que tratam a sobreposição como erro e
+      ignoram a importação toda — que é a razão mais comum para "importei e não
+      aconteceu nada".</p>
+      <p>Para uma plataforma que ainda não é origem, usa o link
+      <b>Qualquer plataforma nova</b>, que leva tudo. Quando a acrescentares às
+      fontes em Ligações, ela passa a ter link próprio na execução seguinte.</p>
+      <p>Os bloqueios teus vão em todos os links, porque nenhuma plataforma os
+      conhece.</p>`],
     ["versões e atualizações", `<p>A etiqueta ao lado do título diz a versão desta
       página. Quando reportares um problema, é o primeiro número a dizer.</p>
       <p>Se ficar vermelha a dizer <code>painel v3.3 · motor v3.2</code>, os dois
@@ -369,6 +400,33 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
       intacto.</p>
       <p>A sincronização em si corre sozinha e não precisa de ti. Só voltas aqui
       para acrescentar uma plataforma, um quarto ou uma casa.</p>`],
+    ["as duas páginas", `<p>Este projeto tem duas páginas no mesmo sítio:</p>
+      <ul><li><b>Disponibilidade</b> — esta. Mostra o que está ocupado e dá os links
+      para as plataformas. Não tem dados pessoais.</li>
+      <li><b>Inquilinos</b> — botão no topo. Fichas, contactos e contratos. Lê um
+      ficheiro que fica no teu computador e que nunca é enviado para a internet.</li></ul>
+      <p>Os dados de ocupação são gerados sozinhos de 15 em 15 minutos. Os dados dos
+      inquilinos escreve-los tu.</p>`],
+    ["calendário pessoal", `<p>Os links em <b>Para o teu calendário pessoal</b> são
+      diferentes dos outros: cada reserva é um evento separado, com o quarto e a
+      plataforma no título. Servem para subscreveres no Google Calendar e veres a
+      casa ao lado dos teus compromissos.</p>
+      <p>No Google: <b>Outros calendários → + → Subscrever por URL</b>, e colas o
+      link. Atualiza-se sozinho, embora o Google só releia de poucas em poucas
+      horas.</p>
+      <p><b>Não levam nomes de hóspedes</b>, porque são públicos como todos os
+      outros. Para uma agenda com nomes, usa o botão de exportar do registo de
+      inquilinos: dá um ficheiro que importas no Google e que não fica em lado
+      nenhum online.</p>`],
+    ["fotos dos quartos", `<p>Cada quarto pode ter uma foto no seu cartão. Não há
+      nada a configurar: sobe a imagem para o repositório com o nome do quarto,
+      dentro de <code>fotos/</code>.</p>
+      <p>Exemplo: a foto do Quarto 2 da Casa Trindade é
+      <code>fotos/casa-trindade/quarto-2.jpg</code>. Aceita também
+      <code>.jpeg</code>, <code>.png</code> e <code>.webp</code>. Para trocar,
+      sobe outra com o mesmo nome.</p>
+      <p>O repositório é público: mete fotos do espaço, sem pessoas, correspondência
+      ou documentos à vista.</p>`],
     ["quando algo está vermelho", `<p>Faixa vermelha no topo: as verificações
       internas da página falharam e os números podem estar errados. Não decidas
       disponibilidade por aqui até estar resolvido.</p>
@@ -522,6 +580,24 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
       const emFalta = ["cores", "ler a fita", "adicionar uma plataforma"].filter(t => !titulos.includes(t));
       if (emFalta.length) return "a ajuda perdeu a secção: " + emFalta.join(", ");
     }],
+    ["quarto sem foto nao parte o cartao (v3.5)", () => {
+      const semFoto = {name:"Q", photo:null, blocks:[], sources:[]};
+      const marcado = semFoto.photo ? "<img" : "";
+      if (marcado !== "") return "um quarto sem foto passou a gerar imagem vazia";
+    }],
+    ["a ajuda cobre as fotos e o campo de colar (v3.5)", () => {
+      const titulos = AJUDA.map(a => a[0]);
+      const precisa = ["fotos dos quartos", "adicionar uma plataforma"];
+      const falta = precisa.filter(t => !titulos.includes(t));
+      if (falta.length) return "a ajuda perdeu: " + falta.join(", ");
+    }],
+    ["quarto sem lista de links usa o calendário geral (v3.7)", () => {
+      const quarto = {ics:"casa/quarto-1.ics", feeds:[]};
+      const feeds = (quarto.feeds && quarto.feeds.length) ? quarto.feeds
+        : [{platform:null, para:"Qualquer plataforma", path:quarto.ics}];
+      if (feeds.length !== 1 || feeds[0].path !== "casa/quarto-1.ics")
+        return "dados antigos deixaram de mostrar link nenhum";
+    }],
     ["as marcas de mes ficam dentro da fita (v3.0)", () => {
       const m = marcasDeMes(d("2026-07-20"), 180);
       if (!m.length) return "a fita ficou sem marcas de mes";
@@ -560,6 +636,7 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
   // Esta pagina e estatica: NAO grava nada. Monta o texto do calendars.json e
   // a pessoa cola-o no GitHub. Qualquer mudanca aqui obriga a rever a ajuda.
   let rascunho = null;
+  const FOTOS = {};
 
   function urlGithub(){
     const anfitriao = location.hostname.match(/^([^.]+)\.github\.io$/);
@@ -660,17 +737,51 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
           caixa.appendChild(aviso);
         });
 
-        const juntar = document.createElement("button");
-        juntar.className = "acao";
-        juntar.textContent = "Juntar plataforma";
-        juntar.addEventListener("click", () => {
+        // campo de colar, sempre visivel: e aqui que se acrescenta uma plataforma
+        const colar = document.createElement("div");        // AJUDA: adicionar uma plataforma
+        colar.className = "ed-colar";
+        const etiqueta = document.createElement("label");
+        etiqueta.textContent = "Colar aqui o link de exportação de uma plataforma nova";
+        const campo = document.createElement("input");
+        campo.className = "url";
+        campo.style.width = "100%";
+        campo.placeholder = "https://…";
+        campo.setAttribute("aria-label",
+          "Colar link de plataforma nova em " + (quarto.name || quarto.id));
+
+        function aceitar(){
+          const url = campo.value.trim();
+          if (!url) return;
+          const queixa = queixaDoLink(url);
+          if (queixa && queixa[0] === "erro"){
+            campo.style.borderColor = "var(--tijolo)";
+            let jaExiste = colar.querySelector(".ed-aviso");
+            if (!jaExiste){
+              jaExiste = document.createElement("div");
+              jaExiste.className = "ed-aviso erro";
+              colar.appendChild(jaExiste);
+            }
+            jaExiste.textContent = queixa[1];
+            return;
+          }
           quarto.sources = quarto.sources || [];
-          quarto.sources.push({platform: "", url: ""});
+          quarto.sources.push({platform: detectarPlataforma(url), url: url});
           desenharLigacoes();
-          const campos = corpo.querySelectorAll(".ed-quarto .url");
-          if (campos.length) campos[campos.length - 1].focus();
-        });
-        caixa.appendChild(juntar);
+        }
+        campo.addEventListener("change", aceitar);
+        campo.addEventListener("paste", () => setTimeout(aceitar, 0));
+        colar.append(etiqueta, campo);
+        caixa.appendChild(colar);
+
+        const dicaFoto = document.createElement("div");     // AJUDA: fotos dos quartos
+        dicaFoto.className = "ed-foto";
+        const temFoto = FOTOS[casa.id + "/" + quarto.id];
+        dicaFoto.innerHTML = temFoto
+          ? "Foto: <code>" + temFoto + "</code> — para trocar, sobe outra com o mesmo nome."
+          : "Sem foto. Sobe uma imagem para <code>fotos/" + casa.id + "/" + quarto.id +
+            ".jpg</code> no repositório e ela aparece aqui.";
+        caixa.appendChild(dicaFoto);
+
         corpo.appendChild(caixa);
       });
     });
@@ -746,6 +857,9 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
     }
 
     rascunho = dados.config ? JSON.parse(JSON.stringify(dados.config)) : null;
+    dados.properties.forEach(casa => casa.rooms.forEach(quarto => {
+      if (quarto.photo) FOTOS[casa.id + "/" + quarto.id] = quarto.photo;
+    }));
 
     const inicio = hoje();
     const total = dias;
@@ -864,8 +978,13 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 
         const proxima = e.seguinte ? fmt(e.seguinte.ini) : "—";
 
+        const foto = quarto.photo                                  // AJUDA: fotos dos quartos
+          ? '<img class="foto" src="' + quarto.photo + '" alt="" loading="lazy" ' +
+            "onerror=\"this.style.display='none'\">"
+          : "";
         cartao.innerHTML =
-          "<h3>" + quarto.name + "</h3>" + estadoHtml +
+          '<div class="cartao-topo">' + foto + '<div class="titulo">' +
+          "<h3>" + quarto.name + "</h3>" + estadoHtml + "</div></div>" +
           '<div class="linha-info"><span>Ocupação nos próximos 90 dias</span><b>' + e.ocupacao + "%</b></div>" +
           '<div class="linha-info"><span>Próxima entrada</span><b>' + proxima + "</b></div>" +
           '<div class="linha-info"><span>Blocos no calendário</span><b>' + quarto.blocks.length + "</b></div>" +
@@ -874,20 +993,50 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
             corPlataforma(f.platform) + '"></i>' + f.platform + " · " + f.state + "</span>").join("") +
           "</div>";
 
-        const botao = document.createElement("button");
-        botao.className = "copiar";
-        botao.textContent = "Copiar link do calendário";
-        botao.addEventListener("click", async () => {
-          const url = urlIcs(quarto.ics);
-          try {
-            await navigator.clipboard.writeText(url);
-            botao.textContent = "Link copiado";
-          } catch {
-            botao.textContent = url;
+        // um link por plataforma: o calendario que se da a uma plataforma nao
+        // leva as reservas dessa mesma plataforma   // AJUDA: dar o teu calendário às plataformas
+        const feeds = (quarto.feeds && quarto.feeds.length)
+          ? quarto.feeds
+          : [{platform: null, para: "Qualquer plataforma", path: quarto.ics}];
+        const caixaLinks = document.createElement("div");
+        caixaLinks.className = "links";
+        caixaLinks.innerHTML = '<div class="cab">Links a colar em cada plataforma</div>';
+        const paraPlataformas = feeds.filter(f => !f.detalhe);
+        const pessoais = feeds.filter(f => f.detalhe);
+        if (quarto.agenda)
+          pessoais.push({platform: null, detalhe: true, path: quarto.agenda,
+                         para: "Agenda da casa toda"});
+        paraPlataformas.concat(pessoais).forEach((feed, indice) => {
+          if (indice === paraPlataformas.length && pessoais.length){
+            const cab = document.createElement("div");   // AJUDA: calendário pessoal
+            cab.className = "cab";
+            cab.style.marginTop = "9px";
+            cab.textContent = "Para o teu calendário pessoal";
+            caixaLinks.appendChild(cab);
           }
-          setTimeout(() => { botao.textContent = "Copiar link do calendário"; }, 2200);
+          const linha = document.createElement("div");
+          linha.className = "link-linha";
+          const ponto = document.createElement("i");
+          ponto.className = "ponto";
+          ponto.style.background = feed.platform ? corPlataforma(feed.platform) : "var(--texto-suave)";
+          const texto = document.createElement("span");
+          texto.textContent = feed.platform ? "Para a " + feed.platform : feed.para;
+          texto.title = feed.platform
+            ? "Sem as reservas da " + feed.platform + ", que ela já conhece"
+            : (feed.detalhe ? "Com quarto e plataforma no título, para subscreveres no Google"
+                            : "Leva tudo — para uma plataforma que ainda não é origem");
+          const botao = document.createElement("button");
+          botao.textContent = "Copiar";
+          botao.addEventListener("click", async () => {
+            const url = urlIcs(feed.path);
+            try { await navigator.clipboard.writeText(url); botao.textContent = "Copiado"; }
+            catch { botao.textContent = "falhou"; }
+            setTimeout(() => { botao.textContent = "Copiar"; }, 1800);
+          });
+          linha.append(ponto, texto, botao);
+          caixaLinks.appendChild(linha);
         });
-        cartao.appendChild(botao);
+        cartao.appendChild(caixaLinks);
         cartoes.appendChild(cartao);
       });
       seccao.appendChild(cartoes);

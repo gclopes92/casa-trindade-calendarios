@@ -29,7 +29,13 @@
               "url": "https://housinganywhere.com/api/v2/listing/2418108/calendar/9d9ac28226bd68630a91cd4ab792cf8c/en"
             }
           ],
-          "manual_blocks": []
+          "manual_blocks": [
+            {
+              "start": "2026-07-15",
+              "end": "2026-08-08",
+              "note": "Nahla - reservou no anuncio do Q2, alojada aqui"
+            }
+          ]
         },
         {
           "id": "quarto-2",
@@ -48,7 +54,13 @@
               "url": ""
             }
           ],
-          "manual_blocks": []
+          "manual_blocks": [
+            {
+              "start": "2026-07-21",
+              "end": "2026-08-31",
+              "note": "Hyunjoo - reserva HA no anuncio deste quarto"
+            }
+          ]
         }
       ]
     }

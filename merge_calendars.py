@@ -70,6 +70,12 @@ disponibilidade errada e alguem reserva um quarto que ja esta ocupado.
 7. PENDENTE — ideias adiadas e decisoes de nao fazer, com a razao:
    - Cor do Idealista por confirmar (as outras vieram dos logos). Corrigir em
      PLATAFORMAS no index.html.
+   - Inventario partilhado entre quartos (bloquear os dois em conjunto para
+     poder trocar hospedes de quarto) — REJEITADO pelo utilizador em 2026-07.
+     A regra e: cada hospede fica no quarto do anuncio onde reservou. Isto so
+     se aguenta com a sincronizacao de pe; sem ela, duas plataformas vendem o
+     mesmo quarto e alguem tem de ser mudado a forca — foi o que aconteceu em
+     julho de 2026 com duas reservas sobrepostas no anuncio do Quarto 2.
    - HousingAnywhere e Spacest tem cores de marca parecidas; ficam parecidas na
      fita. Nao se altera a cor de marca sem o utilizador pedir — o verificador
      avisa quando as duas estao em uso ao mesmo tempo.
@@ -80,8 +86,11 @@ disponibilidade errada e alguem reserva um quarto que ja esta ocupado.
      quando a sincronizacao falha, que e o caso urgente.
    - Suporte a RRULE (eventos recorrentes) — rejeitado; nenhuma plataforma de
      arrendamento exprime reservas como recorrencia, e o custo e alto.
-   - Ler o Tenants.xlsx diretamente — rejeitado; tem dados pessoais e o
-     repositorio e publico. Contratos diretos entram por manual_blocks.
+   - Guardar os dados dos inquilinos no repositorio — REJEITADO em definitivo.
+     O repositorio e publico e o historico do Git guarda o que la entra: um
+     commit com numeros de documento nao se desfaz. O inquilinos.html le um
+     ficheiro que fica no computador do utilizador, e o verificar.py recusa
+     ficheiros de inquilinos dentro do repositorio.
 """
 
 from __future__ import annotations
@@ -95,9 +104,23 @@ import time
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
-VERSAO = "3.4"
+VERSAO = "3.10"
 
 HISTORICO = [
+    "3.10 - as duas paginas passaram a ter ligacao uma para a outra, para se "
+    "perceber que sao o mesmo sitio",
+    "3.9 - o verificador avisa quando um bloqueio manual ja terminou e pode "
+    "ser retirado da configuracao",
+    "3.8 - agenda para o calendario pessoal: um link por quarto e um por casa, "
+    "com quarto e plataforma no titulo e sem nomes de hospedes",
+    "3.7 - cada quarto passou a ter um calendario por plataforma, sem as "
+    "reservas dessa plataforma: importar as proprias reservas de volta fazia a "
+    "plataforma bloquear por cima delas e podia anular a importacao inteira",
+    "3.6 - registo de inquilinos (inquilinos.html): substitui a folha de Excel, "
+    "le e grava um ficheiro no computador e nunca envia nada para a internet",
+    "3.5 - cada quarto pode ter foto: basta por o ficheiro em "
+    "fotos/<casa>/<quarto>.jpg; o editor de ligacoes passou a ter, em cada "
+    "quarto, um campo sempre visivel para colar o link novo",
     "3.4 - as cores das plataformas passaram a ser as dos logos; o verificador "
     "avisa quando duas plataformas em uso ficam com cores parecidas",
     "3.3 - a ajuda passou a explicar a etiqueta da versao e como atualizar os "
@@ -116,6 +139,7 @@ HISTORICO = [
 CONFIG_FILE = "calendars.json"
 OUTPUT_DIR = "output"
 CACHE_DIR = "cache"
+FOTOS_DIR = "fotos"
 STATUS_FILE = "status.json"
 DASHBOARD_FILE = os.path.join(OUTPUT_DIR, "dashboard.js")
 
@@ -285,7 +309,19 @@ def fold(line: str) -> str:
     return "\r\n".join(out)
 
 
-def build_ics(calname: str, blocks, settings: dict) -> str:
+def titulo_detalhado(room_name: str, sources: list) -> str:
+    """Titulo de um evento na agenda pessoal: quarto e de onde veio a reserva.
+
+    NUNCA leva nomes de hospedes: este ficheiro e publico. Os nomes vivem no
+    registo de inquilinos, que fica no computador do utilizador.
+
+    Funcao pura: verificada nos autotestes.
+    """
+    origens = [s.split("manual:", 1)[-1] if s.startswith("manual:") else s for s in sources]
+    return f"{room_name} · " + " + ".join(origens)
+
+
+def build_ics(calname: str, blocks, settings: dict, detalhe: bool = False) -> str:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = [
         "BEGIN:VCALENDAR",
@@ -297,17 +333,31 @@ def build_ics(calname: str, blocks, settings: dict) -> str:
         "X-WR-TIMEZONE:Europe/Lisbon",
         f"X-GENERATED-AT:{stamp}",
     ]
-    for start, end, _sources in blocks:
+    for item in blocks:
+        start, end, sources = item[0], item[1], item[2]
+        rotulo = item[3] if len(item) > 3 else ""
         digest = hashlib.sha1(
-            f"{calname}|{start.isoformat()}|{end.isoformat()}".encode()
+            f"{calname}|{start.isoformat()}|{end.isoformat()}|{rotulo}|"
+            f"{'+'.join(sources)}".encode()
         ).hexdigest()[:16]
+        if detalhe:
+            resumo = titulo_detalhado(rotulo, sources)
+            descricao = (f"{(end - start).days} noites. Origem: "
+                         + ", ".join(sources) + ". Sem nomes por ser publico.")
+        else:
+            resumo = settings["event_summary"]
+            descricao = None
         lines += [
             "BEGIN:VEVENT",
             f"UID:{digest}@{UID_DOMAIN}",
             f"DTSTAMP:{stamp}",
             f"DTSTART;VALUE=DATE:{start.strftime('%Y%m%d')}",
             f"DTEND;VALUE=DATE:{end.strftime('%Y%m%d')}",
-            fold(f"SUMMARY:{settings['event_summary']}"),
+            fold(f"SUMMARY:{resumo}"),
+        ]
+        if descricao:
+            lines.append(fold(f"DESCRIPTION:{descricao}"))
+        lines += [
             "TRANSP:OPAQUE",
             "STATUS:CONFIRMED",
             f"X-CT-ORIGIN:{ORIGIN_TAG}",
@@ -356,6 +406,7 @@ def load_config():
                     "name": room_name,
                     "sources": [s for s in room.get("sources", []) if s.get("url")],
                     "manual_blocks": room.get("manual_blocks", []),
+                    "photo": room.get("photo"),
                 }
             )
         properties.append(
@@ -367,6 +418,48 @@ def load_config():
 # --------------------------------------------------------------------------- #
 # Processamento
 # --------------------------------------------------------------------------- #
+
+
+def feeds_de_um_quarto(plataformas: list, room_id: str) -> list:
+    """Que ficheiros .ics gerar para um quarto.
+
+    O ficheiro geral serve para plataformas novas. Alem dele, um por cada
+    plataforma que ja e origem, sem as reservas dessa mesma plataforma:
+    importar para a Spotahome as reservas da Spotahome faz a plataforma
+    bloquear por cima da reserva que ela propria tem.
+
+    Funcao pura: nao toca no disco, para poder ser verificada nos autotestes.
+    """
+    feeds = [{"excluir": None, "ficheiro": f"{room_id}.ics", "para": "Qualquer plataforma nova"}]
+    for plataforma in sorted(set(plataformas)):
+        feeds.append({
+            "excluir": plataforma,
+            "ficheiro": f"{room_id}--para-{slug(plataforma)}.ics",
+            "para": plataforma,
+        })
+    return feeds
+
+
+def candidatos_de_foto(prop_id: str, room_id: str) -> list:
+    """Nomes de ficheiro aceites para a foto de um quarto, por ordem.
+
+    Funcao pura: nao toca no disco, para poder ser verificada nos autotestes.
+    """
+    return [
+        f"{FOTOS_DIR}/{prop_id}/{room_id}.{extensao}"
+        for extensao in ("jpg", "jpeg", "png", "webp")
+    ]
+
+
+def encontrar_foto(prop_id: str, room_id: str, escolha: str | None) -> str | None:
+    if escolha:  # caminho indicado a mao no calendars.json manda sempre
+        return escolha if os.path.exists(escolha) else None
+    for caminho in candidatos_de_foto(prop_id, room_id):
+        if os.path.exists(caminho):
+            return caminho
+    return None
+
+
 def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
     intervals = []
     source_report = []
@@ -432,21 +525,54 @@ def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
     ]
     blocks = merge_intervals([item for item in clipped if item[1] > item[0]])
 
-    rel_path = f"{prop['id']}/{room['id']}.ics"
-    out_path = os.path.join(OUTPUT_DIR, prop["id"], f"{room['id']}.ics")
-    calname = f"{prop['name']} - {room['name']}"
+    plataformas = [s.get("platform", "") for s in room["sources"] if s.get("platform")]
+    feeds = feeds_de_um_quarto(plataformas, room["id"])
+    calname_base = f"{prop['name']} - {room['name']}"
+    feeds_publicados = []
 
     if hard_failure:
-        if os.path.exists(out_path):
-            print("      !! fonte em falha e sem cache -> ficheiro anterior mantido")
-        else:
-            print("      !! fonte em falha e sem cache -> ficheiro nao criado "
-                  "(publicar dados incompletos daria overbooking)")
+        print("      !! fonte em falha e sem cache -> ficheiros nao tocados "
+              "(publicar dados incompletos daria overbooking)")
+        for feed in feeds:
+            caminho = os.path.join(OUTPUT_DIR, prop["id"], feed["ficheiro"])
+            if os.path.exists(caminho):
+                feeds_publicados.append(
+                    {"platform": feed["excluir"], "para": feed["para"],
+                     "path": f"{prop['id']}/{feed['ficheiro']}"}
+                )
     else:
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        with open(out_path, "w", encoding="utf-8") as handle:
-            handle.write(build_ics(calname, blocks, settings))
-        print(f"    = {len(blocks)} bloco(s) em {out_path}")
+        os.makedirs(os.path.join(OUTPUT_DIR, prop["id"]), exist_ok=True)
+        for feed in feeds:
+            usados = [item for item in clipped if item[2] != feed["excluir"]]
+            blocos_feed = merge_intervals([i for i in usados if i[1] > i[0]])
+            nome = calname_base + ("" if feed["excluir"] is None
+                                   else f" (sem {feed['excluir']})")
+            caminho = os.path.join(OUTPUT_DIR, prop["id"], feed["ficheiro"])
+            with open(caminho, "w", encoding="utf-8") as handle:
+                handle.write(build_ics(nome, blocos_feed, settings))
+            feeds_publicados.append(
+                {"platform": feed["excluir"], "para": feed["para"],
+                 "path": f"{prop['id']}/{feed['ficheiro']}", "blocos": len(blocos_feed)}
+            )
+            etiqueta = "geral" if feed["excluir"] is None else f"sem {feed['excluir']}"
+            print(f"    = {len(blocos_feed)} bloco(s) [{etiqueta}] em {caminho}")
+
+    rel_path = f"{prop['id']}/{room['id']}.ics"
+
+    detalhe_itens = []
+    if not hard_failure:
+        for inicio, fim, origem in sorted(clipped):
+            if fim > inicio:
+                detalhe_itens.append((inicio, fim, [origem], room["name"]))
+        caminho_detalhe = os.path.join(OUTPUT_DIR, prop["id"], f"{room['id']}--detalhe.ics")
+        with open(caminho_detalhe, "w", encoding="utf-8") as handle:
+            handle.write(build_ics(f"{calname_base} (detalhe)", detalhe_itens,
+                                   settings, detalhe=True))
+        feeds_publicados.append(
+            {"platform": None, "para": "Agenda pessoal deste quarto", "detalhe": True,
+             "path": f"{prop['id']}/{room['id']}--detalhe.ics", "blocos": len(detalhe_itens)}
+        )
+        print(f"    = {len(detalhe_itens)} evento(s) [detalhe] em {caminho_detalhe}")
 
     for report in source_report:
         status["sources"].append(
@@ -457,6 +583,9 @@ def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
         "id": room["id"],
         "name": room["name"],
         "ics": rel_path,
+        "feeds": feeds_publicados,
+        "detalhe_itens": detalhe_itens,
+        "photo": encontrar_foto(prop["id"], room["id"], room.get("photo")),
         "ok": not hard_failure,
         "sources": source_report,
         "blocks": [
@@ -615,6 +744,57 @@ def _t14_slug():
         return "um nome sem letras deixou de ter caminho valido"
 
 
+def _t16_caminhos_de_foto():
+    caminhos = candidatos_de_foto("casa-trindade", "quarto-2")
+    if caminhos[0] != "fotos/casa-trindade/quarto-2.jpg":
+        return f"caminho de foto inesperado: {caminhos[0]}"
+    if len({c.rsplit(".", 1)[1] for c in caminhos}) != len(caminhos):
+        return "extensoes repetidas na procura da foto"
+
+
+def _t17_feeds_por_plataforma():
+    feeds = feeds_de_um_quarto(["Spotahome", "Flatio", "Spotahome"], "quarto-2")
+    if len(feeds) != 3:
+        return f"esperava 3 ficheiros (geral + 2 plataformas), obtive {len(feeds)}"
+    if feeds[0]["excluir"] is not None or feeds[0]["ficheiro"] != "quarto-2.ics":
+        return "o ficheiro geral deixou de ser o primeiro"
+    nomes = {f["ficheiro"] for f in feeds}
+    if "quarto-2--para-spotahome.ics" not in nomes:
+        return "falta o ficheiro sem as reservas da Spotahome"
+    if len(nomes) != len(feeds):
+        return "dois feeds a escrever no mesmo ficheiro"
+
+
+def _t18_feed_exclui_a_propria_plataforma():
+    intervalos = [
+        (date(2026, 9, 1), date(2026, 9, 10), "Spotahome"),
+        (date(2026, 10, 1), date(2026, 10, 5), "Flatio"),
+    ]
+    sem_spotahome = merge_intervals([i for i in intervalos if i[2] != "Spotahome"])
+    if len(sem_spotahome) != 1 or sem_spotahome[0][0] != date(2026, 10, 1):
+        return "o calendario para a Spotahome ainda leva as reservas da Spotahome"
+    manual = [(date(2026, 12, 1), date(2026, 12, 5), "manual:Obras")]
+    sem = merge_intervals([i for i in intervalos + manual if i[2] != "Spotahome"])
+    if len(sem) != 2:
+        return "os bloqueios manuais deixaram de ir em todos os calendarios"
+
+
+def _t19_titulo_sem_nomes():
+    titulo = titulo_detalhado("Quarto 2", ["Spotahome", "manual:Hyunjoo - reserva HA"])
+    if not titulo.startswith("Quarto 2 · "):
+        return f"titulo inesperado: {titulo}"
+    if "Spotahome" not in titulo:
+        return "a origem da reserva desapareceu do titulo"
+    detalhe = build_ics("x", [(date(2026, 9, 1), date(2026, 9, 3), ["Flatio"], "Quarto 1")],
+                        dict(DEFAULT_SETTINGS), detalhe=True)
+    if "SUMMARY:Quarto 1 · Flatio" not in detalhe:
+        return "o evento com detalhe perdeu o titulo"
+    simples = build_ics("x", [(date(2026, 9, 1), date(2026, 9, 3), ["Flatio"])],
+                        dict(DEFAULT_SETTINGS))
+    if "Flatio" in simples:
+        return "o calendario publico das plataformas passou a revelar a origem"
+
+
 def _t15_ics_completo():
     ics = build_ics("Casa - Quarto", [(date(2026, 9, 1), date(2026, 9, 3), ["A"])],
                     dict(DEFAULT_SETTINGS))
@@ -642,6 +822,10 @@ AUTOTESTES = [
     ("o UID nao muda entre execucoes (v2.0)", _t13_uid_estavel),
     ("nomes com acentos dao caminhos validos (v3.0)", _t14_slug),
     ("o .ics gerado fecha bem (v1.0)", _t15_ics_completo),
+    ("a foto do quarto e procurada pelo nome (v3.5)", _t16_caminhos_de_foto),
+    ("um calendario por plataforma (v3.7)", _t17_feeds_por_plataforma),
+    ("a agenda pessoal nao leva nomes (v3.8)", _t19_titulo_sem_nomes),
+    ("cada calendario exclui a sua plataforma (v3.7)", _t18_feed_exclui_a_propria_plataforma),
 ]
 
 
@@ -687,6 +871,19 @@ def main() -> int:
             room_data = process_room(prop, room, settings, status)
             ok = room_data["ok"] and ok
             rooms_data.append(room_data)
+        if rooms_data:
+            agenda = []
+            for quarto in rooms_data:
+                agenda.extend(quarto.pop("detalhe_itens", []))
+            if agenda:
+                caminho = os.path.join(OUTPUT_DIR, prop["id"], "agenda.ics")
+                os.makedirs(os.path.dirname(caminho), exist_ok=True)
+                with open(caminho, "w", encoding="utf-8") as handle:
+                    handle.write(build_ics(f"{prop['name']} (agenda)", sorted(agenda),
+                                           settings, detalhe=True))
+                print(f"  = {len(agenda)} evento(s) na agenda de {prop['name']}: {caminho}")
+                for quarto in rooms_data:
+                    quarto["agenda"] = f"{prop['id']}/agenda.ics"
         if rooms_data:
             properties_data.append(
                 {"id": prop["id"], "name": prop["name"], "rooms": rooms_data}
