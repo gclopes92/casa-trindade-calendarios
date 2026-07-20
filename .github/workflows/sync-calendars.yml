@@ -1,0 +1,54 @@
+name: Sync calendars
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # de 15 em 15 minutos (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch: {}      # botão "Run workflow" para atualizar na hora
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-calendars
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verificar o projeto
+        id: verificar
+        continue-on-error: true
+        run: python verificar.py
+
+      - name: Gerar calendários combinados
+        id: merge
+        continue-on-error: true
+        run: python merge_calendars.py
+
+      - name: Guardar ficheiros atualizados
+        run: |
+          git config user.name "calendar-sync-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A output cache status.json
+          if git diff --cached --quiet; then
+            echo "Nada mudou desde a última sincronização."
+            exit 0
+          fi
+          git commit -m "Atualizar calendários combinados"
+          git pull --rebase --autostash
+          git push
+
+      - name: Falhar se algo precisa de atenção
+        if: steps.merge.outcome == 'failure' || steps.verificar.outcome == 'failure'
+        run: |
+          echo "Ver o log acima: ou uma plataforma não respondeu, ou o verificador"
+          echo "encontrou um problema nos ficheiros. Os calendários que foi possível"
+          echo "gerar já foram guardados."
+          exit 1
