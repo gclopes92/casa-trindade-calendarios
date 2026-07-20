@@ -56,7 +56,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-20T17:37:06+00:00",
+ "generated_at": "2026-07-20T19:10:10+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
