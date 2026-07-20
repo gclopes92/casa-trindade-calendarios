@@ -1,53 +1,29 @@
 BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Calendar Sync 3.10//PT
+PRODID:-//Calendar Sync 3.12//PT
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 X-WR-CALNAME:Casa Trindade - Quarto 1 (detalhe)
 X-WR-TIMEZONE:Europe/Lisbon
-X-GENERATED-AT:20260720T204204Z
+X-GENERATED-AT:20260720T212427Z
 BEGIN:VEVENT
 UID:f6185548daeb0840@casa-trindade.local
-DTSTAMP:20260720T204204Z
+DTSTAMP:20260720T212427Z
 DTSTART;VALUE=DATE:20260715
 DTEND;VALUE=DATE:20260808
-SUMMARY:Quarto 1 · Nahla - reservou no anuncio do Q2, alojada aqui
-DESCRIPTION:24 noites. Origem: manual:Nahla - reservou no anuncio do Q2, a
- lojada aqui. Sem nomes por ser publico.
-TRANSP:OPAQUE
-STATUS:CONFIRMED
-X-CT-ORIGIN:casa-trindade
-END:VEVENT
-BEGIN:VEVENT
-UID:44ad72daf38dffd6@casa-trindade.local
-DTSTAMP:20260720T204204Z
-DTSTART;VALUE=DATE:20260719
-DTEND;VALUE=DATE:20260808
-SUMMARY:Quarto 1 · HousingAnywhere
-DESCRIPTION:20 noites. Origem: HousingAnywhere. Sem nomes por ser publico.
-TRANSP:OPAQUE
-STATUS:CONFIRMED
-X-CT-ORIGIN:casa-trindade
-END:VEVENT
-BEGIN:VEVENT
-UID:7dea45542c7c1b59@casa-trindade.local
-DTSTAMP:20260720T204204Z
-DTSTART;VALUE=DATE:20260901
-DTEND;VALUE=DATE:20261218
-SUMMARY:Quarto 1 · HousingAnywhere
-DESCRIPTION:108 noites. Origem: HousingAnywhere. Sem nomes por ser publico
- .
+SUMMARY:Quarto 1 · Nahla
+DESCRIPTION:24 noites. Nahla - reservou no anuncio do Q2, alojada aqui
 TRANSP:OPAQUE
 STATUS:CONFIRMED
 X-CT-ORIGIN:casa-trindade
 END:VEVENT
 BEGIN:VEVENT
 UID:b98d926f326ac138@casa-trindade.local
-DTSTAMP:20260720T204204Z
+DTSTAMP:20260720T212427Z
 DTSTART;VALUE=DATE:20260901
 DTEND;VALUE=DATE:20261218
 SUMMARY:Quarto 1 · Spotahome
-DESCRIPTION:108 noites. Origem: Spotahome. Sem nomes por ser publico.
+DESCRIPTION:108 noites. Spotahome
 TRANSP:OPAQUE
 STATUS:CONFIRMED
 X-CT-ORIGIN:casa-trindade
