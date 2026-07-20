@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   PAINEL DE DISPONIBILIDADE — Calendar Sync
-  Versao 3.1
+  Versao 3.4
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -164,6 +164,58 @@ section.casa{margin-top:40px}
 .copiar:hover{background:var(--ink);color:#fff}
 .copiar:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
 
+
+/* ---------- dialogo e ajuda ---------- */
+.acao{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.04em;
+  padding:6px 12px;border-radius:999px;border:1px solid var(--linha);background:var(--surface);
+  color:var(--ink);cursor:pointer}
+.acao:hover{border-color:var(--ink)}
+.acao:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+dialog{border:0;border-radius:14px;padding:0;max-width:640px;width:calc(100% - 32px);
+  background:var(--surface);color:var(--ink);box-shadow:0 18px 50px rgba(15,32,54,.22)}
+dialog::backdrop{background:rgba(15,32,54,.4)}
+.dlg-topo{display:flex;align-items:baseline;gap:12px;padding:18px 22px 12px;
+  border-bottom:1px solid var(--linha);position:sticky;top:0;background:var(--surface);z-index:2}
+.dlg-topo h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:18px;margin:0}
+.dlg-corpo{padding:16px 22px 22px;max-height:min(68vh,620px);overflow:auto}
+.dlg-corpo h3{font-size:14px;margin:18px 0 4px;font-weight:600}
+.dlg-corpo h3:first-child{margin-top:0}
+.dlg-corpo p{margin:0 0 8px;font-size:13.5px;color:var(--texto-suave)}
+.dlg-corpo code{font-family:"IBM Plex Mono",monospace;font-size:11.5px;background:var(--paper);
+  padding:1px 5px;border-radius:4px;color:var(--ink);word-break:break-all}
+.dlg-corpo ul{margin:0 0 8px;padding-left:18px;font-size:13.5px;color:var(--texto-suave)}
+.fechar{margin-left:auto;border:0;background:transparent;font-size:20px;line-height:1;
+  cursor:pointer;color:var(--texto-suave);padding:0 4px}
+.fechar:hover{color:var(--ink)}
+
+/* ---------- editor de ligacoes ---------- */
+.ed-quarto{border:1px solid var(--linha);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.ed-quarto h4{margin:0 0 8px;font-size:13.5px;font-weight:600}
+.ed-quarto h4 span{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave);
+  font-weight:400;margin-left:6px}
+.ed-linha{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.ed-linha input{font-family:"IBM Plex Mono",monospace;font-size:11.5px;padding:6px 8px;
+  border:1px solid var(--linha);border-radius:6px;background:var(--paper);color:var(--ink);min-width:0}
+.ed-linha input.plataforma{width:130px;flex:none}
+.ed-linha input.url{flex:1}
+.ed-linha input:focus{outline:2px solid var(--azul);outline-offset:-1px;background:var(--surface)}
+.ed-linha .ponto{width:9px;height:9px;border-radius:50%;flex:none}
+.ed-remover{border:0;background:transparent;color:var(--texto-suave);cursor:pointer;
+  font-size:15px;padding:2px 6px;line-height:1}
+.ed-remover:hover{color:var(--tijolo)}
+.ed-aviso{font-size:11.5px;margin:2px 0 8px 15px;color:var(--ocre)}
+.ed-aviso.erro{color:var(--tijolo)}
+.ed-rodape{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--linha);
+  padding:12px 0 0;margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ed-nota{font-size:12.5px;color:var(--texto-suave);margin:0 0 12px}
+.acao.primaria{background:var(--ink);color:#fff;border-color:var(--ink)}
+.acao.primaria:hover{opacity:.88}
+
+/* ---------- pontos de plataforma ---------- */
+.fonte{display:inline-flex;align-items:center;gap:5px}
+.fonte .ponto{width:7px;height:7px;border-radius:50%;flex:none}
+.legenda .amostra.redonda{border-radius:50%}
+
 /* ---------- vazio / erro ---------- */
 .vazio{background:var(--surface);border:1px dashed var(--linha);border-radius:var(--raio);
   padding:28px;margin-top:40px;text-align:center;color:var(--texto-suave)}
@@ -191,6 +243,8 @@ section.casa{margin-top:40px}
     <span class="eyebrow" id="carimbo">a carregar…</span>
     <span id="estado-geral"></span>
     <span class="spacer"></span>
+    <button class="acao" id="btn-ligacoes">Ligações</button>
+    <button class="acao" id="btn-ajuda">Ajuda</button>
     <div class="zoom" role="group" aria-label="Horizonte da fita">
       <button data-dias="90" aria-pressed="false">3 meses</button>
       <button data-dias="180" aria-pressed="true">6 meses</button>
@@ -203,10 +257,131 @@ section.casa{margin-top:40px}
 <main class="wrap" id="conteudo"></main>
 <div id="balao" role="tooltip"></div>
 
+<dialog id="dlg-ajuda">
+  <div class="dlg-topo"><h2>Ajuda</h2><span class="eyebrow" id="ajuda-versao"></span>
+    <button class="fechar" aria-label="Fechar">&times;</button></div>
+  <div class="dlg-corpo" id="ajuda-corpo"></div>
+</dialog>
+
+<dialog id="dlg-ligacoes">
+  <div class="dlg-topo"><h2>Ligações às plataformas</h2>
+    <button class="fechar" aria-label="Fechar">&times;</button></div>
+  <div class="dlg-corpo" id="ligacoes-corpo"></div>
+</dialog>
+
 <script src="output/dashboard.js" onerror="window.SYNC_ERRO=true"></script>
 <script>
 (function(){
-  const PAINEL_VERSAO = "3.1";
+  const PAINEL_VERSAO = "3.4";
+
+  // PLATAFORMAS — cor e endereco de cada plataforma. As cores foram tiradas dos
+  // proprios logos, exceto onde esta dito. Corrige aqui e em mais lado nenhum.
+  // Uma plataforma fora desta lista recebe na mesma uma cor propria e estavel.
+  // AJUDA: cores
+  const PLATAFORMAS = {
+    // azul Mariner, dos recursos de marca. O azul-escuro do logo (#0A0777) e a
+    // cor dominante deles, mas ao lado do texto do painel le-se como preto.
+    "spotahome":       {cor:"#2C75DB", dominio:"spotahome.com"},
+    "flatio":          {cor:"#F6C004", dominio:"flatio.com"},
+    "housinganywhere": {cor:"#FF4B28", dominio:"housinganywhere.com"},
+    "uniplaces":       {cor:"#00AEEF", dominio:"uniplaces.com"},
+    "spacest":         {cor:"#D93558", dominio:"spacest.com"},
+    "idealista":       {cor:"#7BA428", dominio:"idealista.pt"},   // por confirmar
+    "airbnb":          {cor:"#FF5A5F", dominio:"airbnb.com"},
+    "booking":         {cor:"#003580", dominio:"booking.com"},
+    "badi":            {cor:"#00A8A8", dominio:"badi.com"},
+    "erasmusplay":     {cor:"#F2A20C", dominio:"erasmusplay.com"}
+  };
+  const CORES_EXTRA = ["#1B4B8F","#7A3E9D","#0E7C7B","#A34E7B","#3D6B35","#8A5A2B","#2E5E8C","#6B3FA0"];
+
+  const chave = nome => (nome || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  function corPlataforma(nome){
+    if ((nome || "").startsWith("manual:")) return "var(--ocre)";
+    const k = chave(nome);
+    if (PLATAFORMAS[k]) return PLATAFORMAS[k].cor;
+    let soma = 0;
+    for (let i = 0; i < k.length; i++) soma = (soma * 31 + k.charCodeAt(i)) % 9973;
+    return CORES_EXTRA[soma % CORES_EXTRA.length];
+  }
+
+  function detectarPlataforma(url){
+    const alvo = (url || "").toLowerCase();
+    for (const [k, v] of Object.entries(PLATAFORMAS)){
+      if (alvo.includes(v.dominio)) return k.charAt(0).toUpperCase() + k.slice(1);
+    }
+    return "";
+  }
+
+  function fundoDoBloco(fontes){
+    const cores = fontes.map(corPlataforma);
+    if (cores.length === 1) return cores[0];
+    const fatia = 100 / cores.length;
+    const paragens = cores.map((c, i) =>
+      `${c} ${(i * fatia).toFixed(2)}%, ${c} ${((i + 1) * fatia).toFixed(2)}%`);
+    return `linear-gradient(90deg, ${paragens.join(", ")})`;
+  }
+
+  // AJUDA — texto para quem usa. Se mudares comportamento, ATUALIZA AQUI na
+  // mesma alteracao. Os sitios do codigo que obrigam a rever este texto estao
+  // marcados com "AJUDA: <seccao>", e o verificar.py confirma que a seccao existe.
+  const AJUDA = [
+    ["o que isto faz", `<p>Junta os calendários das várias plataformas num único
+      ficheiro por quarto e publica-o num endereço fixo. Cada plataforma importa
+      esse endereço e passa a ver as reservas feitas em todas as outras.</p>
+      <p>Corre sozinho de 15 em 15 minutos. Não é preciso abrir esta página para
+      que funcione — ela só mostra o resultado.</p>`],
+    ["ler a fita", `<p>Uma linha por quarto. Cada barra é um período ocupado, com a
+      cor da plataforma onde a reserva foi feita. Uma barra com duas cores é uma
+      reserva conhecida por duas plataformas.</p>
+      <ul><li>ocre: bloqueio teu, não veio de plataforma nenhuma</li>
+      <li>traço vermelho à esquerda: hoje</li>
+      <li>toca ou passa o rato numa barra para ver datas, noites e origem</li></ul>
+      <p>O seletor no topo muda o horizonte entre 3, 6 e 12 meses.</p>`],
+    ["cores", `<p>Cada plataforma tem a cor do seu logo. Uma plataforma que não
+      esteja na lista recebe uma cor própria, sempre a mesma, calculada a partir
+      do nome.</p>
+      <p>Duas plataformas com logos parecidos ficam com barras parecidas — é o
+      caso do vermelho da HousingAnywhere e do carmim da Spacest. Se te
+      atrapalhar, muda uma delas: as cores estão todas em <code>PLATAFORMAS</code>,
+      no princípio do <code>index.html</code>.</p>`],
+    ["adicionar uma plataforma", `<p>Botão <b>Ligações</b>. Colas o endereço de
+      exportação e o nome da plataforma é adivinhado pelo endereço.</p>
+      <p>Esta página não grava nada sozinha: no fim copias o texto e colas no
+      <code>calendars.json</code> no GitHub. É lá que vive a configuração.</p>
+      <p>Tem de ser o endereço de <b>exportação</b> (acaba tipicamente em
+      <code>.ics</code>), não o endereço da página do calendário no site — esse
+      exige sessão iniciada e devolve a página, não as datas.</p>`],
+    ["dar o teu calendário às plataformas", `<p>Em cada quarto, botão
+      <b>Copiar link do calendário</b>, e colas esse endereço na plataforma nova.</p>
+      <p><b>Não o coles nas plataformas que já são origem deste calendário.</b>
+      Elas já cá estão; importá-lo de volta cria um ciclo.</p>`],
+    ["versões e atualizações", `<p>A etiqueta ao lado do título diz a versão desta
+      página. Quando reportares um problema, é o primeiro número a dizer.</p>
+      <p>Se ficar vermelha a dizer <code>painel v3.3 · motor v3.2</code>, os dois
+      lados estão em versões diferentes: um dos ficheiros foi atualizado e o outro
+      não. Não é grave e as datas continuam certas, mas convém acertar — sobe ao
+      repositório o ficheiro que ficou para trás.</p>
+      <p>Para atualizar: no GitHub, <b>Add file → Upload files</b>, arrasta os
+      ficheiros novos por cima dos antigos e <b>Commit changes</b>. A sincronização
+      não pára por causa disso; e se um ficheiro novo tivesse defeito, as
+      verificações internas travavam a publicação e o calendário anterior ficava
+      intacto.</p>
+      <p>A sincronização em si corre sozinha e não precisa de ti. Só voltas aqui
+      para acrescentar uma plataforma, um quarto ou uma casa.</p>`],
+    ["quando algo está vermelho", `<p>Faixa vermelha no topo: as verificações
+      internas da página falharam e os números podem estar errados. Não decidas
+      disponibilidade por aqui até estar resolvido.</p>
+      <p>Etiqueta de fonte a vermelho: essa plataforma não respondeu e não havia
+      cópia guardada. O calendário desse quarto ficou na versão anterior de
+      propósito — mais vale desatualizado do que a mostrar datas livres a mais.</p>
+      <p>Etiqueta a ocre: a plataforma não respondeu mas usou-se a última leitura
+      boa. Não é urgente.</p>`],
+    ["atrasos", `<p>Entre uma reserva entrar numa plataforma e aparecer nas outras
+      passam tipicamente 15 a 30 minutos: 15 do nosso ciclo, mais o tempo que cada
+      plataforma leva a reler o endereço. Algumas só o fazem de hora a hora.</p>`]
+  ];
+
   const MES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
   const conteudo = document.getElementById("conteudo");
   const balao = document.getElementById("balao");
@@ -316,6 +491,37 @@ section.casa{margin-top:40px}
       const plataforma = ["Spotahome"].every(f => f.startsWith("manual:"));
       if (!manual || plataforma) return "bloqueios manuais e reservas deixaram de ser distinguidos";
     }],
+    ["cada plataforma tem cor propria e estavel (v3.2)", () => {
+      if (corPlataforma("Spotahome") !== "#2C75DB") return "a cor da Spotahome mudou";
+      if (corPlataforma("Plataforma Nova") !== corPlataforma("Plataforma Nova"))
+        return "a cor de uma plataforma desconhecida muda entre chamadas";
+      if (corPlataforma("Uniplaces") === corPlataforma("Flatio"))
+        return "duas plataformas ficaram com a mesma cor";
+      if (corPlataforma("manual:Obras") !== "var(--ocre)") return "o bloqueio manual perdeu a cor propria";
+    }],
+    ["reserva conhecida por duas plataformas mostra as duas cores (v3.2)", () => {
+      const fundo = fundoDoBloco(["Spotahome", "Flatio"]);
+      if (!fundo.startsWith("linear-gradient")) return "a barra ficou de uma cor so";
+      if (!fundo.includes("#2C75DB") || !fundo.includes(corPlataforma("Flatio")))
+        return "falta a cor de uma das plataformas";
+    }],
+    ["o nome da plataforma e adivinhado pelo endereco (v3.2)", () => {
+      if (detectarPlataforma("https://api.spotahome.com/public/calendar/1.ics?k=a") !== "Spotahome")
+        return "nao reconheceu a Spotahome";
+      if (detectarPlataforma("https://exemplo.pt/x.ics") !== "") return "inventou uma plataforma";
+    }],
+    ["o endereco da pagina do site e recusado (v3.2)", () => {
+      const paginaDoSite = queixaDoLink("https://housinganywhere.com/my/listings/1/calendar?useUnitType=true");
+      if (!paginaDoSite || paginaDoSite[0] !== "erro") return "aceitou o endereco da pagina em vez do de exportacao";
+      if (queixaDoLink("https://api.spotahome.com/public/calendar/1.ics?k=a") !== null)
+        return "recusou um endereco de exportacao valido";
+      if ((queixaDoLink("ftp://x") || [])[0] !== "erro") return "aceitou algo que nao e um endereco web";
+    }],
+    ["cada marca de ajuda no codigo tem seccao correspondente (v3.2)", () => {
+      const titulos = AJUDA.map(a => a[0]);
+      const emFalta = ["cores", "ler a fita", "adicionar uma plataforma"].filter(t => !titulos.includes(t));
+      if (emFalta.length) return "a ajuda perdeu a secção: " + emFalta.join(", ");
+    }],
     ["as marcas de mes ficam dentro da fita (v3.0)", () => {
       const m = marcasDeMes(d("2026-07-20"), 180);
       if (!m.length) return "a fita ficou sem marcas de mes";
@@ -341,6 +547,164 @@ section.casa{margin-top:40px}
     return falhas;
   }
 
+
+  // ------------------------------------------------------------------ ajuda
+  function abrirAjuda(){                                        // AJUDA: o que isto faz
+    document.getElementById("ajuda-versao").textContent = "v" + PAINEL_VERSAO;
+    document.getElementById("ajuda-corpo").innerHTML =
+      AJUDA.map(([titulo, corpo]) => "<h3>" + titulo + "</h3>" + corpo).join("");
+    document.getElementById("dlg-ajuda").showModal();
+  }
+
+  // -------------------------------------------------------- editor de links
+  // Esta pagina e estatica: NAO grava nada. Monta o texto do calendars.json e
+  // a pessoa cola-o no GitHub. Qualquer mudanca aqui obriga a rever a ajuda.
+  let rascunho = null;
+
+  function urlGithub(){
+    const anfitriao = location.hostname.match(/^([^.]+)\.github\.io$/);
+    const repo = location.pathname.split("/").filter(Boolean)[0];
+    if (!anfitriao || !repo) return null;
+    return "https://github.com/" + anfitriao[1] + "/" + repo + "/edit/main/calendars.json";
+  }
+
+  function queixaDoLink(url){
+    if (!url.trim()) return ["", "por preencher — esta fonte não vai ser lida"];
+    if (!/^https?:\/\//.test(url)) return ["erro", "não é um endereço web"];
+    if (/\/my\/|useUnitType/.test(url))
+      return ["erro", "é o endereço da página do site, não o de exportação: exige sessão iniciada"];
+    if (!/\.ics|calendar|ical/i.test(url))
+      return ["", "não parece um endereço de calendário — confirma que é o de exportação"];
+    return null;
+  }
+
+  function abrirLigacoes(){                          // AJUDA: adicionar uma plataforma
+    const corpo = document.getElementById("ligacoes-corpo");
+    if (!rascunho){
+      corpo.innerHTML = '<p class="ed-nota">Não encontrei a configuração atual. ' +
+        'Corre a sincronização uma vez para o painel a conhecer.</p>';
+      document.getElementById("dlg-ligacoes").showModal();
+      return;
+    }
+    desenharLigacoes();
+    document.getElementById("dlg-ligacoes").showModal();
+  }
+
+  function desenharLigacoes(){
+    const corpo = document.getElementById("ligacoes-corpo");
+    corpo.innerHTML = '<p class="ed-nota">Cola aqui os endereços de exportação de cada ' +
+      'plataforma. O nome é adivinhado pelo endereço. Isto <b>não grava nada</b>: no fim ' +
+      'copias o texto e colas no <code>calendars.json</code> no GitHub.</p>';
+
+    rascunho.properties.forEach((casa, ic) => {
+      (casa.rooms || []).forEach((quarto, iq) => {
+        const caixa = document.createElement("div");
+        caixa.className = "ed-quarto";
+        caixa.innerHTML = "<h4>" + (quarto.name || quarto.id) +
+          "<span>" + (casa.name || casa.id) + "</span></h4>";
+
+        (quarto.sources || []).forEach((fonte, ifn) => {
+          const linha = document.createElement("div");
+          linha.className = "ed-linha";
+
+          const ponto = document.createElement("i");
+          ponto.className = "ponto";
+          ponto.style.background = corPlataforma(fonte.platform);
+
+          const nome = document.createElement("input");
+          nome.className = "plataforma";
+          nome.value = fonte.platform || "";
+          nome.placeholder = "Plataforma";
+          nome.setAttribute("aria-label", "Nome da plataforma");
+
+          const url = document.createElement("input");
+          url.className = "url";
+          url.value = fonte.url || "";
+          url.placeholder = "https://…";
+          url.setAttribute("aria-label", "Endereço de exportação");
+
+          const remover = document.createElement("button");
+          remover.className = "ed-remover";
+          remover.innerHTML = "&times;";
+          remover.title = "Remover esta fonte";
+          remover.setAttribute("aria-label", "Remover " + (fonte.platform || "fonte"));
+
+          url.addEventListener("input", () => {
+            fonte.url = url.value.trim();
+            if (!nome.value.trim()){
+              const adivinhado = detectarPlataforma(fonte.url);
+              if (adivinhado){ nome.value = adivinhado; fonte.platform = adivinhado; }
+            }
+            ponto.style.background = corPlataforma(fonte.platform);
+            atualizarAviso();
+          });
+          nome.addEventListener("input", () => {
+            fonte.platform = nome.value.trim();
+            ponto.style.background = corPlataforma(fonte.platform);
+          });
+          remover.addEventListener("click", () => {
+            quarto.sources.splice(ifn, 1);
+            desenharLigacoes();
+          });
+
+          linha.append(ponto, nome, url, remover);
+          caixa.appendChild(linha);
+
+          const aviso = document.createElement("div");
+          function atualizarAviso(){
+            const queixa = queixaDoLink(fonte.url || "");
+            aviso.className = "ed-aviso" + (queixa && queixa[0] === "erro" ? " erro" : "");
+            aviso.textContent = queixa ? queixa[1] : "";
+          }
+          atualizarAviso();
+          caixa.appendChild(aviso);
+        });
+
+        const juntar = document.createElement("button");
+        juntar.className = "acao";
+        juntar.textContent = "Juntar plataforma";
+        juntar.addEventListener("click", () => {
+          quarto.sources = quarto.sources || [];
+          quarto.sources.push({platform: "", url: ""});
+          desenharLigacoes();
+          const campos = corpo.querySelectorAll(".ed-quarto .url");
+          if (campos.length) campos[campos.length - 1].focus();
+        });
+        caixa.appendChild(juntar);
+        corpo.appendChild(caixa);
+      });
+    });
+
+    const rodape = document.createElement("div");
+    rodape.className = "ed-rodape";
+    const copiar = document.createElement("button");
+    copiar.className = "acao primaria";
+    copiar.textContent = "Copiar calendars.json";
+    copiar.addEventListener("click", async () => {
+      const texto = JSON.stringify(rascunho, null, 2);
+      try { await navigator.clipboard.writeText(texto); copiar.textContent = "Copiado"; }
+      catch { copiar.textContent = "Não deu para copiar"; }
+      setTimeout(() => { copiar.textContent = "Copiar calendars.json"; }, 2200);
+    });
+    rodape.appendChild(copiar);
+
+    const link = urlGithub();
+    if (link){
+      const abrir = document.createElement("a");
+      abrir.className = "acao";
+      abrir.href = link;
+      abrir.target = "_blank";
+      abrir.rel = "noopener";
+      abrir.textContent = "Abrir o calendars.json no GitHub";
+      rodape.appendChild(abrir);
+    }
+    const nota = document.createElement("span");
+    nota.style.cssText = "font-size:12px;color:var(--texto-suave)";
+    nota.textContent = "Copiar → colar por cima de tudo → Commit changes.";
+    rodape.appendChild(nota);
+    corpo.appendChild(rodape);
+  }
+
   function desenhar(){
     const dados = window.SYNC_DATA;
     conteudo.innerHTML = "";
@@ -355,7 +719,7 @@ section.casa{margin-top:40px}
 
     document.getElementById("carimbo").textContent = "sincronizado " + haQuanto(dados.generated_at);
 
-    const chip = document.getElementById("versao");
+    const chip = document.getElementById("versao");          // AJUDA: versões e atualizações
     const motor = dados.engine_version;
     if (motor && motor !== PAINEL_VERSAO){
       chip.className = "versao desalinhada";
@@ -380,6 +744,8 @@ section.casa{margin-top:40px}
         'Acrescenta uma casa e os links das plataformas no calendars.json.</div>';
       return;
     }
+
+    rascunho = dados.config ? JSON.parse(JSON.stringify(dados.config)) : null;
 
     const inicio = hoje();
     const total = dias;
@@ -433,9 +799,10 @@ section.casa{margin-top:40px}
           if (b.fim <= inicio || b.ini >= fim) return;
           const de = b.ini > inicio ? b.ini : inicio;
           const ate = b.fim < fim ? b.fim : fim;
-          const barra = document.createElement("button");
+          const barra = document.createElement("button");            // AJUDA: ler a fita
           const manual = b.fontes.every(f => f.startsWith("manual:"));
           barra.className = "bloco" + (manual ? " manual" : "");
+          barra.style.background = fundoDoBloco(b.fontes);
           barra.style.left = (noites(inicio, de)/total*100) + "%";
           barra.style.width = Math.max(noites(de, ate)/total*100, 0.35) + "%";
           barra.style.animationDelay = (i*60 + j*25) + "ms";
@@ -462,11 +829,17 @@ section.casa{margin-top:40px}
       });
 
       fita.appendChild(grelha);
+
+      const plataformas = [...new Set(casa.rooms.flatMap(q => q.sources.map(f => f.platform)))];
+      const temManual = casa.rooms.some(q =>
+        q.blocks.some(b => b.sources.some(f => f.startsWith("manual:"))));
       fita.insertAdjacentHTML("beforeend",
         '<div class="legenda">' +
         '<span><i class="amostra" style="background:var(--azul-fundo)"></i>livre</span>' +
-        '<span><i class="amostra" style="background:var(--azul)"></i>reservado</span>' +
-        '<span><i class="amostra" style="background:var(--ocre)"></i>bloqueio meu</span>' +
+        plataformas.map(p =>
+          '<span><i class="amostra redonda" style="background:' + corPlataforma(p) + '"></i>' +
+          p + '</span>').join("") +
+        (temManual ? '<span><i class="amostra redonda" style="background:var(--ocre)"></i>bloqueio meu</span>' : "") +
         '<span><i class="amostra" style="background:var(--tijolo);width:3px"></i>hoje</span>' +
         '</div>');
       seccao.appendChild(fita);
@@ -497,7 +870,8 @@ section.casa{margin-top:40px}
           '<div class="linha-info"><span>Próxima entrada</span><b>' + proxima + "</b></div>" +
           '<div class="linha-info"><span>Blocos no calendário</span><b>' + quarto.blocks.length + "</b></div>" +
           '<div class="fontes">' + quarto.sources.map(f =>
-            '<span class="fonte ' + f.state + '">' + f.platform + " · " + f.state + "</span>").join("") +
+            '<span class="fonte ' + f.state + '"><i class="ponto" style="background:' +
+            corPlataforma(f.platform) + '"></i>' + f.platform + " · " + f.state + "</span>").join("") +
           "</div>";
 
         const botao = document.createElement("button");
@@ -529,6 +903,13 @@ section.casa{margin-top:40px}
       desenhar();
     });
   });
+  document.getElementById("btn-ajuda").addEventListener("click", abrirAjuda);
+  document.getElementById("btn-ligacoes").addEventListener("click", abrirLigacoes);
+  document.querySelectorAll("dialog .fechar").forEach(botao =>
+    botao.addEventListener("click", () => botao.closest("dialog").close()));
+  document.querySelectorAll("dialog").forEach(dlg =>
+    dlg.addEventListener("click", evento => { if (evento.target === dlg) dlg.close(); }));
+
   correrTestes();
   document.getElementById("versao").textContent = "v" + PAINEL_VERSAO;
   document.addEventListener("click", esconderBalao);

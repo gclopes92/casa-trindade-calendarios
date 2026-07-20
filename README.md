@@ -1,4 +1,4 @@
-# Sincronizador de calendários (v3.1)
+# Sincronizador de calendários (v3.2)
 
 Junta os links iCal de várias plataformas (Spotahome, Flatio, Uniplaces,
 HousingAnywhere…) num único `.ics` por quarto, com link público estável,
@@ -107,9 +107,16 @@ Abre a página do GitHub Pages (ou o `index.html` diretamente, se tiveres o
 repositório no computador). Mostra, por casa:
 
 - a fita de disponibilidade — cada quarto uma linha, cada bloco uma reserva;
-  azul é reserva de plataforma, ocre é bloqueio teu, a marca vermelha é hoje;
+  cada plataforma tem a sua cor, ocre é bloqueio teu, a marca vermelha é hoje;
+  uma barra com duas cores é uma reserva conhecida por duas plataformas;
 - por quarto: livre ou ocupado até quando, próxima entrada, ocupação nos
   próximos 90 dias e o botão para copiar o link do calendário;
+- botão **Ajuda**: explica a fita, as cores e o que fazer quando algo fica
+  vermelho. O texto vive na constante `AJUDA` dentro do `index.html` e
+  atualiza-se na mesma alteração que muda o comportamento;
+- botão **Ligações**: colas aí os endereços de exportação das plataformas e o
+  nome é adivinhado pelo endereço. Não grava nada — monta o texto do
+  `calendars.json` para copiares e colares no GitHub;
 - o estado de cada plataforma.
 
 ## Quando algo corre mal

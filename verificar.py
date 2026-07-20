@@ -140,6 +140,43 @@ def verificar_painel(texto_completo: str, versao_motor: str | None) -> None:
             "um dos dois ficou por atualizar"
         )
 
+    # o texto de ajuda tem de existir e cobrir tudo o que esta marcado no codigo
+    if "const AJUDA = [" not in texto:
+        problema(f"{PAINEL}: o texto de ajuda (AJUDA) desapareceu")
+    else:
+        # so os titulos dentro do bloco AJUDA: a mesma expressao aplicada ao
+        # ficheiro inteiro apanhava tambem os nomes dos autotestes, e uma
+        # coincidencia de nomes daria a verificacao por cumprida sem o ser
+        inicio = texto.index("const AJUDA = [")
+        fim = texto.index("];", inicio)
+        seccoes = set(re.findall(r'^\s*\["([^"]+)",', texto[inicio:fim], re.M))
+        marcadas = set(re.findall(r"//\s*AJUDA:\s*([^\n\r]+?)\s*$", texto, re.M))
+        for seccao in sorted(marcadas - seccoes):
+            problema(
+                f"{PAINEL}: o codigo esta marcado com 'AJUDA: {seccao}' mas a ajuda "
+                "nao tem essa seccao — comportamento mudou e o texto ficou para tras"
+            )
+        if not marcadas:
+            aviso(f"{PAINEL}: nenhum sitio do codigo esta marcado com 'AJUDA:'")
+
+    # cores das plataformas: hexadecimais validos e sem repeticoes
+    cores = re.findall(r'"(\w+)":\s*\{cor:"(#[0-9A-Fa-f]{6})"', texto)
+    vistas: dict[str, str] = {}
+    for nome, cor in cores:
+        if cor.upper() in vistas:
+            problema(
+                f"{PAINEL}: {nome} e {vistas[cor.upper()]} tem a mesma cor {cor} — "
+                "ficam indistinguiveis na fita"
+            )
+        vistas[cor.upper()] = nome
+    if "const PLATAFORMAS" in texto and not cores:
+        problema(f"{PAINEL}: PLATAFORMAS existe mas nenhuma cor foi reconhecida")
+    globals()["CORES_PLATAFORMA"] = {nome: cor for nome, cor in cores}
+
+    for identificador in ("btn-ajuda", "btn-ligacoes", "dlg-ajuda", "dlg-ligacoes"):
+        if identificador not in texto_completo:
+            problema(f"{PAINEL}: falta o elemento '{identificador}' — botao sem destino")
+
     if "const TESTES = [" not in texto:
         problema(f"{PAINEL}: a lista de autotestes desapareceu")
 
@@ -244,6 +281,51 @@ def verificar_config(texto: str) -> None:
                     )
 
 
+
+# --------------------------------------------------------------------------- #
+# Cores que se confundem na fita
+#
+# So interessa avisar sobre as plataformas que estao mesmo em uso: uma cor
+# parecida entre duas plataformas que o utilizador nao usa nao lhe diz nada.
+# --------------------------------------------------------------------------- #
+def _rgb(hexadecimal: str):
+    h = hexadecimal.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _distancia(a: str, b: str) -> float:
+    ra, ga, ba = _rgb(a)
+    rb, gb, bb = _rgb(b)
+    return (0.3 * (ra - rb) ** 2 + 0.59 * (ga - gb) ** 2 + 0.11 * (ba - bb) ** 2) ** 0.5
+
+
+def verificar_cores_em_uso(texto_config: str) -> None:
+    cores = globals().get("CORES_PLATAFORMA") or {}
+    if not cores:
+        return
+    try:
+        dados = json.loads(texto_config)
+    except json.JSONDecodeError:
+        return
+    em_uso = set()
+    for casa in dados.get("properties", []):
+        for quarto in casa.get("rooms", []):
+            for fonte in quarto.get("sources", []):
+                nome = re.sub(r"[^a-z0-9]", "", (fonte.get("platform") or "").lower())
+                if nome in cores:
+                    em_uso.add(nome)
+    nomes = sorted(em_uso)
+    for i, primeira in enumerate(nomes):
+        for segunda in nomes[i + 1:]:
+            distancia = _distancia(cores[primeira], cores[segunda])
+            if distancia < 60:
+                aviso(
+                    f"{PAINEL}: {primeira} ({cores[primeira]}) e {segunda} "
+                    f"({cores[segunda]}) ficam parecidas na fita — usa as duas, "
+                    "por isso pode valer a pena afastar uma das cores"
+                )
+
+
 def main() -> int:
     texto_motor = ler(MOTOR)
     versao = verificar_motor(texto_motor) if texto_motor else None
@@ -253,6 +335,7 @@ def main() -> int:
     texto_config = ler(CONFIG)
     if texto_config:
         verificar_config(texto_config)
+        verificar_cores_em_uso(texto_config)
 
     for texto in avisos:
         print("  aviso: " + texto)

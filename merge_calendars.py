@@ -68,8 +68,14 @@ disponibilidade errada e alguem reserva um quarto que ja esta ocupado.
          escreve.
 
 7. PENDENTE — ideias adiadas e decisoes de nao fazer, com a razao:
-   - Cor por plataforma nas barras do painel — adiado; so compensa com muitas
-     casas, e mais cores tornam a fita ilegivel.
+   - Cor do Idealista por confirmar (as outras vieram dos logos). Corrigir em
+     PLATAFORMAS no index.html.
+   - HousingAnywhere e Spacest tem cores de marca parecidas; ficam parecidas na
+     fita. Nao se altera a cor de marca sem o utilizador pedir — o verificador
+     avisa quando as duas estao em uso ao mesmo tempo.
+   - Editor de ligacoes do painel nao grava: monta o texto e a pessoa cola no
+     GitHub. Gravar exigiria um servidor ou um token no browser — rejeitado,
+     um token num repositorio publico da acesso de escrita a quem o encontre.
    - Aviso quando entra uma reserva nova — adiado; o GitHub ja envia email
      quando a sincronizacao falha, que e o caso urgente.
    - Suporte a RRULE (eventos recorrentes) — rejeitado; nenhuma plataforma de
@@ -89,9 +95,15 @@ import time
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
-VERSAO = "3.1"
+VERSAO = "3.4"
 
 HISTORICO = [
+    "3.4 - as cores das plataformas passaram a ser as dos logos; o verificador "
+    "avisa quando duas plataformas em uso ficam com cores parecidas",
+    "3.3 - a ajuda passou a explicar a etiqueta da versao e como atualizar os "
+    "ficheiros, que era o unico sitio da interface sem explicacao",
+    "3.2 - cada plataforma passou a ter a sua cor na fita; o painel ganhou menu "
+    "de ajuda e um editor para colar os links das plataformas",
     "3.1 - o programa passou a testar-se a si proprio no arranque e ganhou "
     "verificador estatico; a versao aparece no painel e nos ficheiros gerados",
     "3.0 - suporte a varias casas; painel de disponibilidade; um calendario "
@@ -455,8 +467,17 @@ def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
 
 
 def write_dashboard(properties_data: list, settings: dict, ok: bool) -> None:
+    # a configuracao viaja para o painel para o editor de ligacoes a poder
+    # mostrar; sao os mesmos dados que ja estao no repositorio publico
+    try:
+        with open(CONFIG_FILE, encoding="utf-8") as handle:
+            config_bruta = json.load(handle)
+    except Exception:  # noqa: BLE001
+        config_bruta = None
+
     payload = {
         "engine_version": VERSAO,
+        "config": config_bruta,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "result": "OK" if ok else "COM ERROS",
         "horizon_days": settings["dashboard_days"],
