@@ -1,6 +1,6 @@
 window.SYNC_DATA = {
- "engine_version": "3.12",
- "site_url": "",
+ "engine_version": "3.14",
+ "site_url": "https://gclopes92.github.io/casa-trindade-calendarios",
  "config": {
   "settings": {
    "block_checkout_day": false,
@@ -8,7 +8,8 @@ window.SYNC_DATA = {
    "months_ahead": 24,
    "use_cache_on_failure": true,
    "event_summary": "Nao disponivel",
-   "dashboard_days": 210
+   "dashboard_days": 210,
+   "site_url": "https://gclopes92.github.io/casa-trindade-calendarios"
   },
   "properties": [
    {
@@ -36,7 +37,7 @@ window.SYNC_DATA = {
        {
         "start": "2026-07-15",
         "end": "2026-08-08",
-        "note": "Nahla - reservou no anuncio do Q2, alojada aqui"
+        "note": "Reserva Flatio no anuncio do Q2, hospede alojada aqui"
        }
       ]
      },
@@ -49,19 +50,19 @@ window.SYNC_DATA = {
         "url": "https://api.spotahome.com/public/calendar/1510606.ics?k=5f0de050590d7bb153e1215f8f1591cb4270de2e25b970bd2248a8d7a5afddcd"
        },
        {
-        "platform": "HousingAnywhere",
-        "url": "https://housinganywhere.com/api/v2/listing/2418120/calendar/3c88b00f595f032519419daa6205ae50/en"
-       },
-       {
         "platform": "Flatio",
         "url": "https://app.flatio.com/en/front/calendar/export?hash=ma40jkvo5t30arr84w5s.ics"
+       },
+       {
+        "platform": "HousingAnywhere",
+        "url": ""
        }
       ],
       "manual_blocks": [
        {
         "start": "2026-07-21",
         "end": "2026-08-31",
-        "note": "Hyunjoo - reserva HA no anuncio deste quarto"
+        "note": "Reserva HousingAnywhere no anuncio deste quarto"
        }
       ]
      }
@@ -69,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-20T22:59:41+00:00",
+ "generated_at": "2026-07-20T23:19:45+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -114,6 +115,28 @@ window.SYNC_DATA = {
        "blocos": 4
       }
      ],
+     "intervalos": [
+      {
+       "start": "2026-07-15",
+       "end": "2026-08-08",
+       "source": "HousingAnywhere"
+      },
+      {
+       "start": "2026-07-15",
+       "end": "2026-08-08",
+       "source": "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
+      },
+      {
+       "start": "2026-09-01",
+       "end": "2026-12-18",
+       "source": "HousingAnywhere"
+      },
+      {
+       "start": "2026-09-01",
+       "end": "2026-12-18",
+       "source": "Spotahome"
+      }
+     ],
      "photo": "fotos/casa-trindade/quarto-1.jpg",
      "ok": true,
      "sources": [
@@ -139,7 +162,7 @@ window.SYNC_DATA = {
        "end": "2026-08-08",
        "sources": [
         "HousingAnywhere",
-        "manual:Nahla - reservou no anuncio do Q2, alojada aqui"
+        "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
        ]
       },
       {
@@ -162,18 +185,12 @@ window.SYNC_DATA = {
        "platform": null,
        "para": "Qualquer plataforma nova",
        "path": "casa-trindade/quarto-2.ics",
-       "blocos": 1
+       "blocos": 2
       },
       {
        "platform": "Flatio",
        "para": "Flatio",
        "path": "casa-trindade/quarto-2--para-flatio.ics",
-       "blocos": 1
-      },
-      {
-       "platform": "HousingAnywhere",
-       "para": "HousingAnywhere",
-       "path": "casa-trindade/quarto-2--para-housinganywhere.ics",
        "blocos": 2
       },
       {
@@ -187,7 +204,24 @@ window.SYNC_DATA = {
        "para": "Agenda pessoal deste quarto",
        "detalhe": true,
        "path": "casa-trindade/quarto-2--detalhe.ics",
-       "blocos": 6
+       "blocos": 3
+      }
+     ],
+     "intervalos": [
+      {
+       "start": "2026-07-15",
+       "end": "2026-08-08",
+       "source": "Flatio"
+      },
+      {
+       "start": "2026-07-21",
+       "end": "2026-08-31",
+       "source": "manual:Reserva HousingAnywhere no anuncio deste quarto"
+      },
+      {
+       "start": "2026-09-01",
+       "end": "2027-01-31",
+       "source": "Spotahome"
       }
      ],
      "photo": "fotos/casa-trindade/quarto-2.jpg",
@@ -199,11 +233,6 @@ window.SYNC_DATA = {
        "events": 1
       },
       {
-       "platform": "HousingAnywhere",
-       "state": "OK",
-       "events": 3
-      },
-      {
        "platform": "Flatio",
        "state": "OK",
        "events": 1
@@ -212,12 +241,17 @@ window.SYNC_DATA = {
      "blocks": [
       {
        "start": "2026-07-15",
-       "end": "2027-01-31",
+       "end": "2026-08-31",
        "sources": [
         "Flatio",
-        "HousingAnywhere",
-        "Spotahome",
-        "manual:Hyunjoo - reserva HA no anuncio deste quarto"
+        "manual:Reserva HousingAnywhere no anuncio deste quarto"
+       ]
+      },
+      {
+       "start": "2026-09-01",
+       "end": "2027-01-31",
+       "sources": [
+        "Spotahome"
        ]
       }
      ],
