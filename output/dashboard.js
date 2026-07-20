@@ -70,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-20T23:44:01+00:00",
+ "generated_at": "2026-07-20T23:55:50+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
