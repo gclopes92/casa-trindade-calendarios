@@ -69,7 +69,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-20T21:38:22+00:00",
+ "generated_at": "2026-07-20T21:48:48+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -104,14 +104,14 @@ window.SYNC_DATA = {
        "platform": "Spotahome",
        "para": "Spotahome",
        "path": "casa-trindade/quarto-1--para-spotahome.ics",
-       "blocos": 1
+       "blocos": 2
       },
       {
        "platform": null,
        "para": "Agenda pessoal deste quarto",
        "detalhe": true,
        "path": "casa-trindade/quarto-1--detalhe.ics",
-       "blocos": 2
+       "blocos": 4
       }
      ],
      "photo": "fotos/casa-trindade/quarto-1.jpg",
@@ -130,7 +130,7 @@ window.SYNC_DATA = {
       {
        "platform": "HousingAnywhere",
        "state": "OK",
-       "events": 0
+       "events": 2
       }
      ],
      "blocks": [
@@ -138,6 +138,7 @@ window.SYNC_DATA = {
        "start": "2026-07-15",
        "end": "2026-08-08",
        "sources": [
+        "HousingAnywhere",
         "manual:Nahla - reservou no anuncio do Q2, alojada aqui"
        ]
       },
@@ -145,6 +146,7 @@ window.SYNC_DATA = {
        "start": "2026-09-01",
        "end": "2026-12-18",
        "sources": [
+        "HousingAnywhere",
         "Spotahome"
        ]
       }
