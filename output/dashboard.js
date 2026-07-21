@@ -70,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-21T00:23:39+00:00",
+ "generated_at": "2026-07-21T03:44:45+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -87,19 +87,19 @@ window.SYNC_DATA = {
        "platform": null,
        "para": "Qualquer plataforma nova",
        "path": "casa-trindade/quarto-1.ics",
-       "blocos": 1
+       "blocos": 2
       },
       {
        "platform": "Flatio",
        "para": "Flatio",
        "path": "casa-trindade/quarto-1--para-flatio.ics",
-       "blocos": 1
+       "blocos": 2
       },
       {
        "platform": "HousingAnywhere",
        "para": "HousingAnywhere",
        "path": "casa-trindade/quarto-1--para-housinganywhere.ics",
-       "blocos": 1
+       "blocos": 2
       },
       {
        "platform": "Spotahome",
@@ -112,7 +112,7 @@ window.SYNC_DATA = {
        "para": "Agenda pessoal deste quarto",
        "detalhe": true,
        "path": "casa-trindade/quarto-1--detalhe.ics",
-       "blocos": 1
+       "blocos": 2
       }
      ],
      "intervalos": [
@@ -120,6 +120,11 @@ window.SYNC_DATA = {
        "start": "2026-07-15",
        "end": "2026-08-08",
        "source": "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
+      },
+      {
+       "start": "2026-09-01",
+       "end": "2026-12-18",
+       "source": "Spotahome"
       }
      ],
      "photo": "fotos/casa-trindade/quarto-1.jpg",
@@ -128,8 +133,8 @@ window.SYNC_DATA = {
       {
        "platform": "Spotahome",
        "state": "OK",
-       "events": 1,
-       "ecos": 1
+       "events": 2,
+       "ecos": 0
       },
       {
        "platform": "Flatio",
@@ -141,7 +146,7 @@ window.SYNC_DATA = {
        "platform": "HousingAnywhere",
        "state": "OK",
        "events": 0,
-       "ecos": 2
+       "ecos": 1
       }
      ],
      "blocks": [
@@ -150,6 +155,13 @@ window.SYNC_DATA = {
        "end": "2026-08-08",
        "sources": [
         "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
+       ]
+      },
+      {
+       "start": "2026-09-01",
+       "end": "2026-12-18",
+       "sources": [
+        "Spotahome"
        ]
       }
      ],
@@ -176,7 +188,7 @@ window.SYNC_DATA = {
        "platform": "HousingAnywhere",
        "para": "HousingAnywhere",
        "path": "casa-trindade/quarto-2--para-housinganywhere.ics",
-       "blocos": 2
+       "blocos": 1
       },
       {
        "platform": "Spotahome",
@@ -194,9 +206,9 @@ window.SYNC_DATA = {
      ],
      "intervalos": [
       {
-       "start": "2026-07-15",
-       "end": "2027-01-31",
-       "source": "Flatio"
+       "start": "2026-07-21",
+       "end": "2026-09-01",
+       "source": "HousingAnywhere"
       }
      ],
      "photo": "fotos/casa-trindade/quarto-2.jpg",
@@ -205,30 +217,28 @@ window.SYNC_DATA = {
       {
        "platform": "Spotahome",
        "state": "OK",
-       "events": 1,
-       "ecos": 0
+       "events": 0,
+       "ecos": 1
       },
       {
        "platform": "Flatio",
        "state": "OK",
-       "events": 1,
-       "ecos": 0
+       "events": 0,
+       "ecos": 1
       },
       {
        "platform": "HousingAnywhere",
        "state": "OK",
-       "events": 3,
-       "ecos": 0
+       "events": 1,
+       "ecos": 1
       }
      ],
      "blocks": [
       {
-       "start": "2026-07-15",
-       "end": "2027-01-31",
+       "start": "2026-07-21",
+       "end": "2026-09-01",
        "sources": [
-        "Flatio",
         "HousingAnywhere",
-        "Spotahome",
         "manual:Reserva HousingAnywhere no anuncio deste quarto"
        ]
       }
