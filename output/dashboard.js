@@ -70,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-21T06:17:49+00:00",
+ "generated_at": "2026-07-21T07:09:57+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -230,7 +230,7 @@ window.SYNC_DATA = {
        "platform": "HousingAnywhere",
        "state": "OK",
        "events": 1,
-       "ecos": 0
+       "ecos": 1
       }
      ],
      "blocks": [
