@@ -58,19 +58,13 @@ window.SYNC_DATA = {
         "url": "https://housinganywhere.com/api/v2/listing/2418120/calendar/3c88b00f595f032519419daa6205ae50/en"
        }
       ],
-      "manual_blocks": [
-       {
-        "start": "2026-07-21",
-        "end": "2026-08-31",
-        "note": "Reserva HousingAnywhere no anuncio deste quarto"
-       }
-      ]
+      "manual_blocks": []
      }
     ]
    }
   ]
  },
- "generated_at": "2026-07-21T07:12:43+00:00",
+ "generated_at": "2026-07-21T07:18:27+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -240,8 +234,7 @@ window.SYNC_DATA = {
        "sources": [
         "Flatio",
         "HousingAnywhere",
-        "Spotahome",
-        "manual:Reserva HousingAnywhere no anuncio deste quarto"
+        "Spotahome"
        ]
       }
      ],
