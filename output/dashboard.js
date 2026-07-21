@@ -1,5 +1,5 @@
 window.SYNC_DATA = {
- "engine_version": "3.14",
+ "engine_version": "3.15",
  "site_url": "https://gclopes92.github.io/casa-trindade-calendarios",
  "config": {
   "settings": {
@@ -55,7 +55,7 @@ window.SYNC_DATA = {
        },
        {
         "platform": "HousingAnywhere",
-        "url": "https://housinganywhere.com/api/v2/listing/2418120/calendar/3c88b00f595f032519419daa6205ae50/en"
+        "url": ""
        }
       ],
       "manual_blocks": [
@@ -70,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-20T23:55:50+00:00",
+ "generated_at": "2026-07-21T00:00:06+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -112,7 +112,7 @@ window.SYNC_DATA = {
        "para": "Agenda pessoal deste quarto",
        "detalhe": true,
        "path": "casa-trindade/quarto-1--detalhe.ics",
-       "blocos": 4
+       "blocos": 2
       }
      ],
      "intervalos": [
@@ -122,19 +122,9 @@ window.SYNC_DATA = {
        "source": "HousingAnywhere"
       },
       {
-       "start": "2026-07-15",
-       "end": "2026-08-08",
-       "source": "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
-      },
-      {
        "start": "2026-09-01",
        "end": "2026-12-18",
        "source": "HousingAnywhere"
-      },
-      {
-       "start": "2026-09-01",
-       "end": "2026-12-18",
-       "source": "Spotahome"
       }
      ],
      "photo": "fotos/casa-trindade/quarto-1.jpg",
@@ -185,18 +175,12 @@ window.SYNC_DATA = {
        "platform": null,
        "para": "Qualquer plataforma nova",
        "path": "casa-trindade/quarto-2.ics",
-       "blocos": 1
+       "blocos": 2
       },
       {
        "platform": "Flatio",
        "para": "Flatio",
        "path": "casa-trindade/quarto-2--para-flatio.ics",
-       "blocos": 1
-      },
-      {
-       "platform": "HousingAnywhere",
-       "para": "HousingAnywhere",
-       "path": "casa-trindade/quarto-2--para-housinganywhere.ics",
        "blocos": 2
       },
       {
@@ -210,34 +194,14 @@ window.SYNC_DATA = {
        "para": "Agenda pessoal deste quarto",
        "detalhe": true,
        "path": "casa-trindade/quarto-2--detalhe.ics",
-       "blocos": 6
+       "blocos": 2
       }
      ],
      "intervalos": [
       {
        "start": "2026-07-15",
-       "end": "2026-07-21",
-       "source": "HousingAnywhere"
-      },
-      {
-       "start": "2026-07-15",
-       "end": "2026-08-08",
-       "source": "Flatio"
-      },
-      {
-       "start": "2026-07-21",
        "end": "2026-08-31",
-       "source": "manual:Reserva HousingAnywhere no anuncio deste quarto"
-      },
-      {
-       "start": "2026-07-21",
-       "end": "2026-09-01",
-       "source": "HousingAnywhere"
-      },
-      {
-       "start": "2026-09-01",
-       "end": "2027-01-31",
-       "source": "HousingAnywhere"
+       "source": "Flatio"
       },
       {
        "start": "2026-09-01",
@@ -257,22 +221,22 @@ window.SYNC_DATA = {
        "platform": "Flatio",
        "state": "OK",
        "events": 1
-      },
-      {
-       "platform": "HousingAnywhere",
-       "state": "OK",
-       "events": 3
       }
      ],
      "blocks": [
       {
        "start": "2026-07-15",
-       "end": "2027-01-31",
+       "end": "2026-08-31",
        "sources": [
         "Flatio",
-        "HousingAnywhere",
-        "Spotahome",
         "manual:Reserva HousingAnywhere no anuncio deste quarto"
+       ]
+      },
+      {
+       "start": "2026-09-01",
+       "end": "2027-01-31",
+       "sources": [
+        "Spotahome"
        ]
       }
      ],
