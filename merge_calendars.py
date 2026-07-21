@@ -63,6 +63,11 @@ disponibilidade errada e alguem reserva um quarto que ja esta ocupado.
          sem cache nao se escreve nada (ver process_room).
    v2.0  Feed devolvido por outra plataforma reentrava e duplicava blocos em
          ciclo. -> marca X-CT-ORIGIN e dominio de UID proprio + teste 4.
+   v3.7  A marca de origem so apanhava ecos que voltassem com o nosso UID. As
+         plataformas que importam e reexportam com identificadores proprios
+         passavam, e a mesma estadia aparecia duas vezes: uma real e uma
+         devolvida por nos. -> guardar o que se publicou a cada plataforma e
+         descartar o que volta contido nisso (ver e_eco e teste 21).
    v3.0  A mensagem "= N bloco(s) em ..." aparecia mesmo quando o ficheiro
          nao chegava a ser escrito. -> print movido para dentro do ramo que
          escreve.
@@ -104,9 +109,12 @@ import time
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
-VERSAO = "3.15"
+VERSAO = "3.16"
 
 HISTORICO = [
+    "3.16 - deteccao de eco: as plataformas que importam o nosso calendario e o "
+    "reexportam como se fosse delas deixaram de duplicar reservas; o programa "
+    "guarda o que publicou a cada uma e ignora o que lhe volta igual",
     "3.15 - a agenda para o calendario pessoal passou a ter um evento por "
     "periodo ocupado, em vez de um por plataforma: uma banda por quarto",
     "3.14 - na fita, cada reserva passa a ser pintada nas datas em que existe; "
@@ -151,6 +159,7 @@ CONFIG_FILE = "calendars.json"
 OUTPUT_DIR = "output"
 CACHE_DIR = "cache"
 FOTOS_DIR = "fotos"
+PUBLICADO_DIR = os.path.join(CACHE_DIR, "publicado")
 STATUS_FILE = "status.json"
 DASHBOARD_FILE = os.path.join(OUTPUT_DIR, "dashboard.js")
 
@@ -448,6 +457,39 @@ def load_config():
 # --------------------------------------------------------------------------- #
 
 
+
+def e_eco(intervalo, publicados: list) -> bool:
+    """O intervalo cabe inteiro dentro de algo que ja lhe demos a ler?
+
+    Se sim, e o nosso proprio bloqueio a voltar: varias plataformas importam o
+    nosso calendario e reexportam-no como se fosse delas, com identificadores
+    proprios, por isso a marca de origem nao chega para os apanhar.
+
+    E seguro descartar: se aquelas datas estao bloqueadas nessa plataforma
+    porque nos as bloqueamos, ela nao pode ter recebido reserva para elas.
+
+    Funcao pura: verificada nos autotestes.
+    """
+    inicio, fim = intervalo
+    return any(pub_inicio <= inicio and fim <= pub_fim for pub_inicio, pub_fim in publicados)
+
+
+def ler_publicado(prop_id: str, room_id: str, plataforma: str) -> list:
+    caminho = os.path.join(PUBLICADO_DIR, prop_id, f"{room_id}--{slug(plataforma)}.json")
+    try:
+        with open(caminho, encoding="utf-8") as handle:
+            return [(date.fromisoformat(a), date.fromisoformat(b)) for a, b in json.load(handle)]
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def guardar_publicado(prop_id: str, room_id: str, plataforma: str, blocos) -> None:
+    caminho = os.path.join(PUBLICADO_DIR, prop_id, f"{room_id}--{slug(plataforma)}.json")
+    os.makedirs(os.path.dirname(caminho), exist_ok=True)
+    with open(caminho, "w", encoding="utf-8") as handle:
+        json.dump([[b[0].isoformat(), b[1].isoformat()] for b in blocos], handle)
+
+
 def feeds_de_um_quarto(plataformas: list, room_id: str) -> list:
     """Que ficheiros .ics gerar para um quarto.
 
@@ -518,18 +560,26 @@ def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
             with open(cache_path, "w", encoding="utf-8") as handle:
                 handle.write(text)
 
+        publicados = ler_publicado(prop["id"], room["id"], platform)
         count = 0
+        ecos = 0
         for event in parse_events(text):
             interval = event_to_interval(event, settings["block_checkout_day"])
-            if interval:
-                intervals.append((interval[0], interval[1], platform))
-                count += 1
-        print(f"      -> {count} reserva(s)")
+            if not interval:
+                continue
+            if e_eco(interval, publicados):
+                ecos += 1  # bloqueio nosso, devolvido por esta plataforma
+                continue
+            intervals.append((interval[0], interval[1], platform))
+            count += 1
+        print(f"      -> {count} reserva(s)"
+              + (f", {ecos} eco(s) ignorado(s)" if ecos else ""))
         source_report.append(
             {
                 "platform": platform,
                 "state": "CACHE" if used_cache else "OK",
                 "events": count,
+                "ecos": ecos,
             }
         )
 
@@ -582,6 +632,8 @@ def process_room(prop: dict, room: dict, settings: dict, status: dict) -> dict:
                 {"platform": feed["excluir"], "para": feed["para"],
                  "path": f"{prop['id']}/{feed['ficheiro']}", "blocos": len(blocos_feed)}
             )
+            if feed["excluir"]:
+                guardar_publicado(prop["id"], room["id"], feed["excluir"], blocos_feed)
             etiqueta = "geral" if feed["excluir"] is None else f"sem {feed['excluir']}"
             print(f"    = {len(blocos_feed)} bloco(s) [{etiqueta}] em {caminho}")
 
@@ -831,6 +883,20 @@ def _t20_agenda_uma_banda_por_periodo():
         return "o evento unico perdeu a origem das reservas"
 
 
+def _t21_eco_de_volta():
+    publicados = [(date(2026, 7, 15), date(2026, 8, 8))]
+    if not e_eco((date(2026, 7, 15), date(2026, 8, 8)), publicados):
+        return "o bloqueio devolvido igual ao que publicamos nao foi apanhado"
+    if not e_eco((date(2026, 7, 20), date(2026, 8, 1)), publicados):
+        return "um pedaco do nosso bloqueio devolvido nao foi apanhado"
+    if e_eco((date(2026, 7, 10), date(2026, 8, 8)), publicados):
+        return "uma reserva que comeca antes do nosso bloqueio foi descartada"
+    if e_eco((date(2026, 9, 1), date(2026, 10, 1)), publicados):
+        return "uma reserva noutras datas foi descartada"
+    if e_eco((date(2026, 7, 15), date(2026, 8, 8)), []):
+        return "sem nada publicado, uma reserva foi descartada"
+
+
 def _t19_titulo_sem_nomes():
     if rotulo_curto("Nahla - reservou no anuncio do Q2, alojada aqui") != "Nahla":
         return "a nota longa deixou de ser encurtada para o titulo"
@@ -884,6 +950,7 @@ AUTOTESTES = [
     ("um calendario por plataforma (v3.7)", _t17_feeds_por_plataforma),
     ("a agenda pessoal nao leva nomes (v3.8)", _t19_titulo_sem_nomes),
     ("uma banda por periodo ocupado (v3.15)", _t20_agenda_uma_banda_por_periodo),
+    ("o nosso bloqueio devolvido e ignorado (v3.16)", _t21_eco_de_volta),
     ("cada calendario exclui a sua plataforma (v3.7)", _t18_feed_exclui_a_propria_plataforma),
 ]
 

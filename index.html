@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   PAINEL DE DISPONIBILIDADE — Calendar Sync
-  Versao 3.15
+  Versao 3.16
 
   ─────────────────────────────────────────────────────────────────────────
   MANUTENCAO — LER ANTES DE ALTERAR ESTE FICHEIRO
@@ -294,7 +294,7 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
 <script src="output/dashboard.js" onerror="window.SYNC_ERRO=true"></script>
 <script>
 (function(){
-  const PAINEL_VERSAO = "3.15";
+  const PAINEL_VERSAO = "3.16";
 
   // PLATAFORMAS — cor e endereco de cada plataforma. As cores foram tiradas dos
   // proprios logos, exceto onde esta dito. Corrige aqui e em mais lado nenhum.
@@ -437,7 +437,11 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
       cópia guardada. O calendário desse quarto ficou na versão anterior de
       propósito — mais vale desatualizado do que a mostrar datas livres a mais.</p>
       <p>Etiqueta a ocre: a plataforma não respondeu mas usou-se a última leitura
-      boa. Não é urgente.</p>`],
+      boa. Não é urgente.</p>
+      <p>Se uma etiqueta disser <b>eco</b>, essa plataforma devolveu-nos bloqueios
+      que fomos nós a dar-lhe. São ignorados — é o comportamento certo, não um
+      erro. Acontece com plataformas que importam um calendário e depois o
+      exportam como se fosse delas.</p>`],
     ["atrasos", `<p>Entre uma reserva entrar numa plataforma e aparecer nas outras
       passam tipicamente 15 a 30 minutos: 15 do nosso ciclo, mais o tempo que cada
       plataforma leva a reler o endereço. Algumas só o fazem de hora a hora.</p>`]
@@ -1062,8 +1066,11 @@ dialog::backdrop{background:rgba(15,32,54,.4)}
           '<div class="linha-info"><span>Próxima entrada</span><b>' + proxima + "</b></div>" +
           '<div class="linha-info"><span>Blocos no calendário</span><b>' + quarto.blocks.length + "</b></div>" +
           '<div class="fontes">' + quarto.sources.map(f =>
-            '<span class="fonte ' + f.state + '"><i class="ponto" style="background:' +
-            corPlataforma(f.platform) + '"></i>' + f.platform + " · " + f.state + "</span>").join("") +
+            '<span class="fonte ' + f.state + '" title="' +
+            (f.ecos ? f.ecos + " bloqueio(s) nosso(s) devolvido(s) por esta plataforma e ignorado(s)"
+                    : "leitura direta da plataforma") + '"><i class="ponto" style="background:' +
+            corPlataforma(f.platform) + '"></i>' + f.platform + " · " + f.state +
+            (f.ecos ? " · " + f.ecos + " eco" : "") + "</span>").join("") +
           "</div>";
 
         // um link por plataforma: o calendario que se da a uma plataforma nao
