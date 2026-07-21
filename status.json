@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-07-21T00:20:38+00:00",
+  "generated_at": "2026-07-21T00:23:36+00:00",
   "sources": [
     {
       "casa": "Casa Trindade",
       "quarto": "Quarto 1",
       "platform": "Spotahome",
       "state": "OK",
-      "events": 2,
-      "ecos": 0
+      "events": 1,
+      "ecos": 1
     },
     {
       "casa": "Casa Trindade",
@@ -22,8 +22,8 @@
       "quarto": "Quarto 1",
       "platform": "HousingAnywhere",
       "state": "OK",
-      "events": 2,
-      "ecos": 0
+      "events": 0,
+      "ecos": 2
     },
     {
       "casa": "Casa Trindade",
@@ -39,6 +39,14 @@
       "platform": "Flatio",
       "state": "OK",
       "events": 1,
+      "ecos": 0
+    },
+    {
+      "casa": "Casa Trindade",
+      "quarto": "Quarto 2",
+      "platform": "HousingAnywhere",
+      "state": "OK",
+      "events": 3,
       "ecos": 0
     }
   ],

@@ -5,26 +5,15 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 X-WR-CALNAME:Casa Trindade - Quarto 1 (detalhe)
 X-WR-TIMEZONE:Europe/Lisbon
-X-GENERATED-AT:20260721T002039Z
+X-GENERATED-AT:20260721T002338Z
 BEGIN:VEVENT
-UID:9ef5ba91e8b29689@casa-trindade.local
-DTSTAMP:20260721T002039Z
+UID:b522fe0a1d5a5edd@casa-trindade.local
+DTSTAMP:20260721T002338Z
 DTSTART;VALUE=DATE:20260715
 DTEND;VALUE=DATE:20260808
-SUMMARY:Quarto 1 · HousingAnywhere + Reserva Flatio no anu…
-DESCRIPTION:24 noites. HousingAnywhere / Reserva Flatio no anuncio do Q2, 
- hospede alojada aqui
-TRANSP:OPAQUE
-STATUS:CONFIRMED
-X-CT-ORIGIN:casa-trindade
-END:VEVENT
-BEGIN:VEVENT
-UID:f93587b947492015@casa-trindade.local
-DTSTAMP:20260721T002039Z
-DTSTART;VALUE=DATE:20260901
-DTEND;VALUE=DATE:20261218
-SUMMARY:Quarto 1 · HousingAnywhere + Spotahome
-DESCRIPTION:108 noites. HousingAnywhere / Spotahome
+SUMMARY:Quarto 1 · Reserva Flatio no anu…
+DESCRIPTION:24 noites. Reserva Flatio no anuncio do Q2, hospede alojada aq
+ ui
 TRANSP:OPAQUE
 STATUS:CONFIRMED
 X-CT-ORIGIN:casa-trindade
