@@ -1,2 +1,1 @@
-Poe aqui a foto de cada quarto: quarto-1.jpg, quarto-2.jpg (.jpeg/.png/.webp tambem servem).
-Apaga este ficheiro quando puseres as tuas. O repositorio e publico.
+Poe aqui quarto-1.jpg e quarto-2.jpg. Apaga este ficheiro depois.
