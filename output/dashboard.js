@@ -1,5 +1,5 @@
 window.SYNC_DATA = {
- "engine_version": "3.15",
+ "engine_version": "3.16",
  "site_url": "https://gclopes92.github.io/casa-trindade-calendarios",
  "config": {
   "settings": {
@@ -70,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-21T00:04:54+00:00",
+ "generated_at": "2026-07-21T00:20:39+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -133,17 +133,20 @@ window.SYNC_DATA = {
       {
        "platform": "Spotahome",
        "state": "OK",
-       "events": 2
+       "events": 2,
+       "ecos": 0
       },
       {
        "platform": "Flatio",
        "state": "OK",
-       "events": 0
+       "events": 0,
+       "ecos": 0
       },
       {
        "platform": "HousingAnywhere",
        "state": "OK",
-       "events": 2
+       "events": 2,
+       "ecos": 0
       }
      ],
      "blocks": [
@@ -215,12 +218,14 @@ window.SYNC_DATA = {
       {
        "platform": "Spotahome",
        "state": "OK",
-       "events": 1
+       "events": 1,
+       "ecos": 0
       },
       {
        "platform": "Flatio",
        "state": "OK",
-       "events": 1
+       "events": 1,
+       "ecos": 0
       }
      ],
      "blocks": [
