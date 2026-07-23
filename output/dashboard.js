@@ -70,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-22T23:15:25+00:00",
+ "generated_at": "2026-07-23T01:00:34+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -117,7 +117,7 @@ window.SYNC_DATA = {
      ],
      "intervalos": [
       {
-       "start": "2026-07-15",
+       "start": "2026-07-16",
        "end": "2026-08-08",
        "source": "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
       },
@@ -151,7 +151,7 @@ window.SYNC_DATA = {
      ],
      "blocks": [
       {
-       "start": "2026-07-15",
+       "start": "2026-07-16",
        "end": "2026-08-08",
        "sources": [
         "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
@@ -200,7 +200,7 @@ window.SYNC_DATA = {
      ],
      "intervalos": [
       {
-       "start": "2026-07-15",
+       "start": "2026-07-16",
        "end": "2026-08-31",
        "source": "Flatio"
       },
@@ -228,7 +228,7 @@ window.SYNC_DATA = {
      ],
      "blocks": [
       {
-       "start": "2026-07-15",
+       "start": "2026-07-16",
        "end": "2026-08-31",
        "sources": [
         "Flatio",
