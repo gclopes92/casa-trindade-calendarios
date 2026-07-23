@@ -70,7 +70,7 @@ window.SYNC_DATA = {
    }
   ]
  },
- "generated_at": "2026-07-23T01:00:34+00:00",
+ "generated_at": "2026-07-23T04:33:28+00:00",
  "result": "OK",
  "horizon_days": 210,
  "properties": [
@@ -119,7 +119,7 @@ window.SYNC_DATA = {
       {
        "start": "2026-07-16",
        "end": "2026-08-08",
-       "source": "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
+       "source": "HousingAnywhere"
       },
       {
        "start": "2026-09-01",
@@ -145,8 +145,8 @@ window.SYNC_DATA = {
       {
        "platform": "HousingAnywhere",
        "state": "OK",
-       "events": 0,
-       "ecos": 2
+       "events": 1,
+       "ecos": 1
       }
      ],
      "blocks": [
@@ -154,6 +154,7 @@ window.SYNC_DATA = {
        "start": "2026-07-16",
        "end": "2026-08-08",
        "sources": [
+        "HousingAnywhere",
         "manual:Reserva Flatio no anuncio do Q2, hospede alojada aqui"
        ]
       },

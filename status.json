@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-23T01:00:32+00:00",
+  "generated_at": "2026-07-23T04:33:27+00:00",
   "sources": [
     {
       "casa": "Casa Trindade",
@@ -22,8 +22,8 @@
       "quarto": "Quarto 1",
       "platform": "HousingAnywhere",
       "state": "OK",
-      "events": 0,
-      "ecos": 2
+      "events": 1,
+      "ecos": 1
     },
     {
       "casa": "Casa Trindade",
